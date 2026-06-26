@@ -27,6 +27,8 @@ const CURRENT_BREEDER_CAGES = {
   "CDKL5 FS x Satb2": ["500422"]
 };
 
+const BREEDING_PROGRAMS = Object.keys(CURRENT_BREEDER_CAGES);
+
 const els = {
   rows: document.querySelector("#taskRows"),
   template: document.querySelector("#taskRowTemplate"),
@@ -273,7 +275,7 @@ function sectionFromRow(cells) {
   const filled = cells.filter(Boolean);
   if (filled.length > 3) return "";
   const text = filled.join(" ").trim().toLowerCase();
-  if (/\bbreeders?\b|\bbreeding\b/.test(text)) return "breeding";
+  if (/^(breeders?|breeding)$/.test(text)) return "breeding";
   if (/^weanlings?$/.test(text)) return "weanlings";
   if (/^adults?$/.test(text)) return "adults";
   if (/^males?$/.test(text)) return "adults";
@@ -1011,18 +1013,19 @@ function replacementCriteriaLabel(program, sex) {
 function replacementGroups(options) {
   const wrap = document.createElement("div");
   wrap.className = "replacement-programs";
-  const programs = [...new Set(options.map((option) => option.program))].sort();
+  const programs = BREEDING_PROGRAMS;
 
   programs.forEach((program) => {
+    const programOptions = options.filter((option) => option.program === program);
     const programBlock = document.createElement("details");
     programBlock.className = "replacement-program";
     programBlock.open = false;
     const title = document.createElement("summary");
-    title.textContent = program;
+    title.textContent = `${program} (${programOptions.length})`;
     programBlock.append(title);
 
     ["M", "F"].forEach((sex) => {
-      const sexOptions = options.filter((option) => option.program === program && option.sex.toUpperCase() === sex);
+      const sexOptions = programOptions.filter((option) => option.sex.toUpperCase() === sex);
       const sexBlock = document.createElement("div");
       sexBlock.className = "replacement-sex-group";
       const sexTitle = document.createElement("h4");
