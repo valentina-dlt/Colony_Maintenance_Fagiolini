@@ -925,15 +925,14 @@ function breederLineGroups(cages) {
   }
 
   lines.forEach((lineName) => {
+    const lineCages = cages.filter((cage) => cage.line === lineName);
     const lineBlock = document.createElement("section");
     lineBlock.className = "breeder-line-group";
     const title = document.createElement("h3");
-    title.textContent = lineName;
+    title.textContent = `${lineName} (${lineCages.length})`;
     const grid = document.createElement("div");
     grid.className = "breeder-grid";
-    cages
-      .filter((cage) => cage.line === lineName)
-      .forEach((cage) => grid.append(breederCageCard(cage)));
+    lineCages.forEach((cage) => grid.append(breederCageCard(cage)));
     lineBlock.append(title, grid);
     wrap.append(lineBlock);
   });
@@ -951,8 +950,6 @@ function breederCageCard(cage) {
   const title = document.createElement("div");
   title.className = "breeder-card-title";
   title.textContent = `Cage ${cage.cage}`;
-  const line = document.createElement("p");
-  line.textContent = cage.line;
   const status = document.createElement("span");
   status.className = "breeder-status";
   status.textContent = cage.breederStatus;
@@ -960,7 +957,7 @@ function breederCageCard(cage) {
   ageLine.textContent = ages.join(", ");
   const detail = document.createElement("small");
   detail.textContent = animals;
-  card.append(title, line, status, ageLine, detail);
+  card.append(title, status, ageLine, detail);
   return card;
 }
 
