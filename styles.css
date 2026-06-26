@@ -127,6 +127,34 @@ main {
   font-weight: 700;
 }
 
+.calendar-tools {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.calendar-mode {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  padding: 3px;
+}
+
+.mode-button {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  min-height: 34px;
+  padding: 0 11px;
+}
+
+.mode-button.active {
+  background: #173d33;
+  color: white;
+}
+
 .legend-dot {
   border-radius: 50%;
   display: inline-block;
@@ -177,6 +205,10 @@ main {
 
 .task-card-due {
   border-left-color: var(--due);
+}
+
+.task-card-upcoming {
+  border-left-color: var(--upcoming);
 }
 
 .task-card-review {
@@ -460,6 +492,10 @@ tbody tr:hover {
   .calendar-header {
     align-items: start;
     flex-direction: column;
+  }
+
+  .calendar-tools {
+    justify-items: start;
   }
 
   .search-box {

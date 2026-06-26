@@ -7,6 +7,8 @@ Static GitHub Pages app for turning a Google Sheets mouse colony workbook into a
 - Ear tagging: due after P13 and before P21.
 - Weaning: due after P21 and by P28.
 - Adult cages with missing or unclear tags: flagged for review.
+- Today view: shows open tasks whose work window has started.
+- Week and Month views: toggle between full task windows and due dates only.
 
 The app reads the live Google Sheet directly in the browser through Google's visualization endpoint. The spreadsheet itself is not modified.
 

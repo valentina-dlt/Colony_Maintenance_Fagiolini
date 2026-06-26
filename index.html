@@ -84,11 +84,17 @@
           <p id="calendarKicker" class="eyebrow">Calendar</p>
           <h2 id="calendarTitle"></h2>
         </div>
-        <div class="calendar-legend">
-          <span><b class="legend-dot overdue-dot"></b>Overdue</span>
-          <span><b class="legend-dot due-dot"></b>Due</span>
-          <span><b class="legend-dot upcoming-dot"></b>Upcoming</span>
-          <span><b class="legend-dot review-dot"></b>Review</span>
+        <div class="calendar-tools">
+          <div class="calendar-mode" aria-label="Calendar display mode">
+            <button class="mode-button active" type="button" data-calendar-mode="window">Task Windows</button>
+            <button class="mode-button" type="button" data-calendar-mode="due">Due Dates Only</button>
+          </div>
+          <div class="calendar-legend">
+            <span><b class="legend-dot overdue-dot"></b>Overdue</span>
+            <span><b class="legend-dot due-dot"></b>Due</span>
+            <span><b class="legend-dot upcoming-dot"></b>Upcoming</span>
+            <span><b class="legend-dot review-dot"></b>Review</span>
+          </div>
         </div>
       </section>
 

@@ -34,6 +34,7 @@ const els = {
   calendarHeader: document.querySelector("#calendarHeader"),
   calendarKicker: document.querySelector("#calendarKicker"),
   calendarTitle: document.querySelector("#calendarTitle"),
+  calendarModeButtons: document.querySelectorAll(".mode-button"),
   overdueCount: document.querySelector("#overdueCount"),
   dueCount: document.querySelector("#dueCount"),
   upcomingCount: document.querySelector("#upcomingCount"),
@@ -43,6 +44,7 @@ const els = {
 let taskCache = [];
 let completionState = loadCompletionState();
 let activeView = "all";
+let calendarMode = "window";
 
 function addDays(dateString, days) {
   const date = new Date(`${dateString}T00:00:00`);
@@ -90,10 +92,14 @@ function endOfMonth(dateString) {
   return date.toISOString().slice(0, 10);
 }
 
-function dueDateForCalendar(task) {
-  if (task.state === "overdue" || task.state === "review") return CONFIG.today;
-  if (CONFIG.today >= task.dueStart && CONFIG.today <= task.dueEnd) return CONFIG.today;
-  return task.dueStart;
+function isActionableToday(task) {
+  return task.state !== "done" && task.dueStart <= CONFIG.today;
+}
+
+function taskAppearsOnDate(task, date, mode) {
+  if (task.state === "done") return false;
+  if (mode === "due") return task.dueEnd === date;
+  return task.dueStart <= date && date <= task.dueEnd;
 }
 
 function loadCompletionState() {
@@ -461,7 +467,7 @@ function renderTable(tasks) {
 }
 
 function renderToday(tasks) {
-  const todayTasks = tasks.filter((task) => task.state !== "done" && dueDateForCalendar(task) === CONFIG.today);
+  const todayTasks = tasks.filter(isActionableToday);
   els.todayView.innerHTML = "";
 
   if (todayTasks.length === 0) {
@@ -475,6 +481,7 @@ function renderToday(tasks) {
   const groups = [
     ["overdue", "Overdue"],
     ["due", "Due Today"],
+    ["upcoming", "Workable Today"],
     ["review", "Needs Review"]
   ];
 
@@ -540,12 +547,12 @@ function renderCalendar(tasks, view) {
   const range = calendarRange(view);
   const monthPrefix = CONFIG.today.slice(0, 7);
   els.calendarKicker.textContent = range.kicker;
-  els.calendarTitle.textContent = range.title;
+  els.calendarTitle.textContent = `${range.title} | ${calendarMode === "due" ? "Due dates only" : "Task windows"}`;
   els.calendarView.innerHTML = "";
 
   for (let index = 0; index < range.days; index += 1) {
     const date = addDays(range.start, index);
-    const dayTasks = tasks.filter((task) => task.state !== "done" && dueDateForCalendar(task) === date);
+    const dayTasks = tasks.filter((task) => taskAppearsOnDate(task, date, calendarMode));
     const cell = document.createElement("section");
     cell.className = "calendar-day";
     if (date === CONFIG.today) cell.classList.add("is-today");
@@ -588,6 +595,12 @@ function setActiveView(view) {
   render();
 }
 
+function setCalendarMode(mode) {
+  calendarMode = mode;
+  els.calendarModeButtons.forEach((button) => button.classList.toggle("active", button.dataset.calendarMode === mode));
+  render();
+}
+
 function render() {
   updateSummary(taskCache);
   const tasks = activeView === "all" ? filteredTasks() : visibleTasks();
@@ -624,6 +637,9 @@ async function refresh() {
 });
 els.viewTabs.forEach((tab) => {
   tab.addEventListener("click", () => setActiveView(tab.dataset.view));
+});
+els.calendarModeButtons.forEach((button) => {
+  button.addEventListener("click", () => setCalendarMode(button.dataset.calendarMode));
 });
 els.refreshButton.addEventListener("click", refresh);
 els.refreshSchedule.textContent = `Auto-refreshes every ${Math.round(CONFIG.autoRefreshMs / 60000)} min while open`;
