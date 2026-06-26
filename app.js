@@ -569,18 +569,37 @@ function renderCalendar(tasks, view) {
       empty.textContent = "No tasks";
       cell.append(empty);
     } else {
-      dayTasks.slice(0, view === "month" ? 4 : 12).forEach((task) => {
-        const item = document.createElement("button");
-        item.className = `calendar-task calendar-task-${task.state}`;
-        item.type = "button";
-        item.title = task.details || "";
-        item.textContent = `${task.task}: ${task.cage}`;
-        cell.append(item);
+      const visibleLimit = view === "month" ? 6 : 18;
+      const visibleTasksForDay = dayTasks.slice(0, visibleLimit);
+      const groupedTasks = visibleTasksForDay.reduce((groups, task) => {
+        if (!groups.has(task.line)) groups.set(task.line, []);
+        groups.get(task.line).push(task);
+        return groups;
+      }, new Map());
+
+      groupedTasks.forEach((lineTasks, line) => {
+        const group = document.createElement("div");
+        group.className = "calendar-line-group";
+        const lineHeader = document.createElement("div");
+        lineHeader.className = "calendar-line-name";
+        lineHeader.textContent = line;
+        group.append(lineHeader);
+
+        lineTasks.forEach((task) => {
+          const item = document.createElement("button");
+          item.className = `calendar-task calendar-task-${task.state}`;
+          item.type = "button";
+          item.title = `${task.line} | ${task.details || ""}`;
+          item.textContent = `${task.task}: ${task.cage}`;
+          group.append(item);
+        });
+
+        cell.append(group);
       });
-      if (dayTasks.length > 4 && view === "month") {
+      if (dayTasks.length > visibleLimit) {
         const more = document.createElement("p");
         more.className = "calendar-more";
-        more.textContent = `+${dayTasks.length - 4} more`;
+        more.textContent = `+${dayTasks.length - visibleLimit} more`;
         cell.append(more);
       }
     }

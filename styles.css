@@ -289,6 +289,20 @@ main {
   text-transform: uppercase;
 }
 
+.calendar-line-group {
+  margin-top: 7px;
+}
+
+.calendar-line-name {
+  color: #25352d;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 8px 0 4px;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
 .calendar-task {
   border: 0;
   border-radius: 5px;
