@@ -109,6 +109,14 @@ function taskAppearsOnDate(task, date, mode) {
   return task.dueStart <= date && date <= task.dueEnd;
 }
 
+function isFsLine(line) {
+  return /\bFS\b/i.test(line);
+}
+
+function taskCategoryClass(task) {
+  return task.category ? `task-category-${task.category}` : "";
+}
+
 function loadCompletionState() {
   try {
     return JSON.parse(localStorage.getItem(CONFIG.localStorageKey)) || {};
@@ -299,6 +307,7 @@ function buildTasks(rows) {
 
       tasks.push(makeTask({
         task: "Ear tag",
+        category: "maintenance",
         line: row.line,
         cage: row.cage,
         row: row.row,
@@ -312,6 +321,7 @@ function buildTasks(rows) {
 
       tasks.push(makeTask({
         task: "Wean",
+        category: "maintenance",
         line: row.line,
         cage: row.cage,
         row: row.row,
@@ -322,11 +332,56 @@ function buildTasks(rows) {
         details: detailParts.join(" | "),
         reviewNeeded: /weaned/i.test(row.notes || "")
       }));
+
+      if (isFsLine(row.line)) {
+        tasks.push(makeTask({
+          task: "Pup ASO Injection 1",
+          category: "experimental",
+          line: row.line,
+          cage: row.cage,
+          row: row.row,
+          dob: row.litter.dob,
+          dueStart: row.litter.dob,
+          dueEnd: addDays(row.litter.dob, 2),
+          age,
+          details: `FS pup experimental timeline | ${detailParts.join(" | ")}`,
+          reviewNeeded: false
+        }));
+
+        tasks.push(makeTask({
+          task: "Pup ASO Injection 2",
+          category: "experimental",
+          line: row.line,
+          cage: row.cage,
+          row: row.row,
+          dob: row.litter.dob,
+          dueStart: addDays(row.litter.dob, 6),
+          dueEnd: addDays(row.litter.dob, 6),
+          age,
+          details: `FS pup experimental timeline | ${detailParts.join(" | ")}`,
+          reviewNeeded: false
+        }));
+
+        tasks.push(makeTask({
+          task: "Plasma/Tissue Collection",
+          category: "experimental",
+          line: row.line,
+          cage: row.cage,
+          row: row.row,
+          dob: row.litter.dob,
+          dueStart: addDays(row.litter.dob, 21),
+          dueEnd: addDays(row.litter.dob, 21),
+          age,
+          details: `FS pup experimental timeline | ${detailParts.join(" | ")}`,
+          reviewNeeded: false
+        }));
+      }
     }
 
     if (row.adultCage && row.missingTags) {
       tasks.push(makeTask({
         task: "Adult missing tags",
+        category: "maintenance",
         line: row.line,
         cage: row.cage,
         row: row.row,
@@ -458,6 +513,7 @@ function renderTable(tasks) {
     const doneCell = row.querySelector("td");
     const pill = row.querySelector(".state-pill");
 
+    row.classList.add(taskCategoryClass(task));
     doneCell.innerHTML = "";
     doneCell.append(makeDoneToggle(task));
     pill.textContent = task.state.replace("-", " ");
@@ -505,7 +561,7 @@ function renderToday(tasks) {
 
 function taskCard(task) {
   const card = document.createElement("article");
-  card.className = `task-card task-card-${task.state}`;
+  card.className = `task-card task-card-${task.state} ${taskCategoryClass(task)}`;
   const meta = task.age === "" ? task.line : `${task.line} | P${task.age}`;
 
   const top = document.createElement("div");
@@ -594,7 +650,7 @@ function renderCalendar(tasks, view) {
 
         lineTasks.forEach((task) => {
           const item = document.createElement("button");
-          item.className = `calendar-task calendar-task-${task.state}`;
+          item.className = `calendar-task calendar-task-${task.state} ${taskCategoryClass(task)}`;
           item.type = "button";
           item.title = `${task.line} | ${task.details || ""}`;
           item.textContent = `${task.task}: ${task.cage}`;

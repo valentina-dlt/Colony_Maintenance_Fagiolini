@@ -179,6 +179,10 @@ main {
   background: var(--review);
 }
 
+.experimental-dot {
+  background: #7ec8e3;
+}
+
 .today-view {
   display: grid;
   gap: 14px;
@@ -197,6 +201,18 @@ main {
   border-left: 5px solid var(--line);
   border-radius: 8px;
   padding: 12px;
+}
+
+.task-category-experimental {
+  border-left-color: #7ec8e3 !important;
+}
+
+tr.task-category-experimental {
+  background: #eef9fd;
+}
+
+tr.task-category-experimental:hover {
+  background: #e1f3fa;
 }
 
 .task-card-overdue {
@@ -333,6 +349,11 @@ main {
 
 .calendar-task-review {
   background: var(--review);
+}
+
+.calendar-task.task-category-experimental {
+  background: #7ec8e3;
+  color: #113947;
 }
 
 .calendar-empty,
