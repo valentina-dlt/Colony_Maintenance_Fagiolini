@@ -20,6 +20,13 @@
     </header>
 
     <main>
+      <nav class="view-tabs" aria-label="Task views">
+        <button class="view-tab active" type="button" data-view="all">All Tasks</button>
+        <button class="view-tab" type="button" data-view="today">Today</button>
+        <button class="view-tab" type="button" data-view="week">Week</button>
+        <button class="view-tab" type="button" data-view="month">Month</button>
+      </nav>
+
       <section class="summary-grid" aria-label="Task summary">
         <div class="metric overdue">
           <span id="overdueCount">0</span>
@@ -72,7 +79,24 @@
         </label>
       </section>
 
-      <section class="task-table-wrap">
+      <section id="calendarHeader" class="calendar-header hidden" aria-live="polite">
+        <div>
+          <p id="calendarKicker" class="eyebrow">Calendar</p>
+          <h2 id="calendarTitle"></h2>
+        </div>
+        <div class="calendar-legend">
+          <span><b class="legend-dot overdue-dot"></b>Overdue</span>
+          <span><b class="legend-dot due-dot"></b>Due</span>
+          <span><b class="legend-dot upcoming-dot"></b>Upcoming</span>
+          <span><b class="legend-dot review-dot"></b>Review</span>
+        </div>
+      </section>
+
+      <section id="todayView" class="today-view hidden" aria-label="Today's tasks"></section>
+
+      <section id="calendarView" class="calendar-grid hidden" aria-label="Task calendar"></section>
+
+      <section id="tableView" class="task-table-wrap">
         <table>
           <thead>
             <tr>
