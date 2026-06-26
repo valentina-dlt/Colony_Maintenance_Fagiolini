@@ -10,8 +10,8 @@ Static GitHub Pages app for turning a Google Sheets mouse colony workbook into a
 - Today view: shows open tasks whose work window has started.
 - Week and Month views: toggle between full task windows and due dates only.
 - FS pup experimental timeline: Pup ASO Injection 1 at P0-P2, Pup ASO Injection 2 at P6, and Plasma/Tissue Collection at P21.
-- Pup ASO injection tasks move to review after their injection window instead of becoming overdue.
-- Breeders view: shows breeding-section cages as Good or Replace by age, plus replacement options grouped by target line and sex. Replacement options do not filter for inbreeding yet.
+- Pup ASO injection and Plasma/Tissue Collection tasks move to review after their work window instead of becoming overdue.
+- Breeders view: shows breeding-section cages as Good or Replace by age, plus replacement options grouped by target line and explicit sex/genotype criteria. Replacement options do not filter for inbreeding yet.
 
 The app reads the live Google Sheet directly in the browser through Google's visualization endpoint. The spreadsheet itself is not modified.
 

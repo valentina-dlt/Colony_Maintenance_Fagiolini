@@ -119,6 +119,10 @@ function isInjectionTask(task) {
   return task.task === "Pup ASO Injection 1" || task.task === "Pup ASO Injection 2";
 }
 
+function isReviewAfterWindowTask(task) {
+  return isInjectionTask(task) || task.task === "Plasma/Tissue Collection";
+}
+
 function taskCategoryClass(task) {
   return task.category ? `task-category-${task.category}` : "";
 }
@@ -143,7 +147,7 @@ function classifyTask(task) {
   if (completionState[task.id]?.done) return "done";
   if (task.reviewNeeded) return "review";
   const today = CONFIG.today;
-  if (isInjectionTask(task) && today > task.dueEnd) return "review";
+  if (isReviewAfterWindowTask(task) && today > task.dueEnd) return "review";
   if (today > task.dueEnd) return "overdue";
   if (today >= task.dueStart && today <= task.dueEnd) return "due";
   return "upcoming";
@@ -921,6 +925,40 @@ function replacementCard(animal) {
   return card;
 }
 
+function replacementCriteriaLabel(program, sex) {
+  const labels = {
+    "C57": {
+      M: "C57 MALES",
+      F: "C57 FEMALES"
+    },
+    "CDKL5 KO": {
+      M: "C57 MALES",
+      F: "CDKL5KO HET FEMALES"
+    },
+    "CDKL5 FS": {
+      M: "C57 MALES",
+      F: "CDKL5FS HET FEMALES"
+    },
+    "CDKL5 Flox": {
+      M: "C57 MALES",
+      F: "CDKL5 FLOX FL/FL FEMALES"
+    },
+    "Satb2 Cre": {
+      M: "C57 MALES",
+      F: "SATB2 +/+ FEMALES"
+    },
+    "CDKL5 KO x Satb2": {
+      M: "SATB2 +/+ MALES",
+      F: "CDKL5KO x SATB2 HET + FEMALES"
+    },
+    "CDKL5 FS x Satb2": {
+      M: "SATB2 +/+ MALES",
+      F: "CDKL5FS x SATB2 HET + FEMALES"
+    }
+  };
+  return labels[program]?.[sex] || (sex === "M" ? "MALES" : "FEMALES");
+}
+
 function replacementGroups(options) {
   const wrap = document.createElement("div");
   wrap.className = "replacement-programs";
@@ -933,12 +971,12 @@ function replacementGroups(options) {
     title.textContent = program;
     programBlock.append(title);
 
-    [["M", "Males"], ["F", "Females"]].forEach(([sex, label]) => {
+    ["M", "F"].forEach((sex) => {
       const sexOptions = options.filter((option) => option.program === program && option.sex.toUpperCase() === sex);
       const sexBlock = document.createElement("div");
       sexBlock.className = "replacement-sex-group";
       const sexTitle = document.createElement("h4");
-      sexTitle.textContent = label;
+      sexTitle.textContent = replacementCriteriaLabel(program, sex);
       sexBlock.append(sexTitle);
 
       if (sexOptions.length === 0) {
