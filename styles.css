@@ -309,6 +309,21 @@ tr.task-category-experimental:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.breeder-line-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.breeder-line-group {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.breeder-line-group h3 {
+  font-size: 20px;
+  margin: 0 0 10px;
+}
+
 .breeder-card,
 .replacement-card {
   background: white;

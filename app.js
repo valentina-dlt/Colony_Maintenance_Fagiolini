@@ -901,10 +901,7 @@ function renderBreeders(rows) {
   const breederSection = document.createElement("section");
   breederSection.className = "breeder-section";
   breederSection.innerHTML = "<h2>Breeding Cages</h2>";
-  const breederGrid = document.createElement("div");
-  breederGrid.className = "breeder-grid";
-  breederCages.forEach((cage) => breederGrid.append(breederCageCard(cage)));
-  breederSection.append(breederGrid);
+  breederSection.append(breederLineGroups(breederCages));
   els.breedersView.append(breederSection);
 
   const replacementSection = document.createElement("section");
@@ -912,6 +909,36 @@ function renderBreeders(rows) {
   replacementSection.innerHTML = "<h2>Replacement Options <span>No filters for inbreeding.</span></h2>";
   replacementSection.append(replacementGroups(replacementOptions));
   els.breedersView.append(replacementSection);
+}
+
+function breederLineGroups(cages) {
+  const wrap = document.createElement("div");
+  wrap.className = "breeder-line-groups";
+  const lines = [...new Set(cages.map((cage) => cage.line))].sort();
+
+  if (lines.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "calendar-empty";
+    empty.textContent = "No breeding cages match the current filters.";
+    wrap.append(empty);
+    return wrap;
+  }
+
+  lines.forEach((lineName) => {
+    const lineBlock = document.createElement("section");
+    lineBlock.className = "breeder-line-group";
+    const title = document.createElement("h3");
+    title.textContent = lineName;
+    const grid = document.createElement("div");
+    grid.className = "breeder-grid";
+    cages
+      .filter((cage) => cage.line === lineName)
+      .forEach((cage) => grid.append(breederCageCard(cage)));
+    lineBlock.append(title, grid);
+    wrap.append(lineBlock);
+  });
+
+  return wrap;
 }
 
 function breederCageCard(cage) {
