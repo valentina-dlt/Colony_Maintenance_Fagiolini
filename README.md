@@ -7,11 +7,15 @@ Static GitHub Pages app for turning a Google Sheets mouse colony workbook into a
 - Ear tagging: due after P13 and before P21.
 - Weaning: due after P21 and by P28.
 - Adult cages with missing or unclear tags: flagged for review.
+- C57 pups are not assigned ear-tagging tasks, and C57 adult cages are not flagged for missing tags.
+- Late weaning tasks are labeled `Wean info to spreadsheet`.
 - Today view: shows open tasks whose work window has started.
 - Week and Month views: toggle between full task windows and due dates only.
-- FS pup experimental timeline: Pup ASO Injection 1 at P0-P2, Pup ASO Injection 2 at P6, and Plasma/Tissue Collection at P21.
+- CDKL5 FS pup experimental timeline: Pup ASO Injection 1 at P0-P2, Pup ASO Injection 2 at P6, and Plasma/Tissue Collection at P21.
+- Past Pup ASO Injection 1/2 tasks are hidden; current and future injection tasks remain visible.
 - Pup ASO injection and Plasma/Tissue Collection tasks move to review after their work window instead of becoming overdue.
 - Breeders view: shows breeding-section cages as Good or Replace by age, plus replacement options grouped by target line and explicit sex/genotype criteria. Replacement options do not filter for inbreeding yet.
+- Replacement option groups are collapsed by default.
 
 The app reads the live Google Sheet directly in the browser through Google's visualization endpoint. The spreadsheet itself is not modified.
 

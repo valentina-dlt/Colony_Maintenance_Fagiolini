@@ -372,8 +372,10 @@ tr.task-category-experimental:hover {
   padding-top: 12px;
 }
 
-.replacement-program h3 {
+.replacement-program summary {
+  cursor: pointer;
   font-size: 20px;
+  font-weight: 900;
   margin: 0 0 10px;
 }
 

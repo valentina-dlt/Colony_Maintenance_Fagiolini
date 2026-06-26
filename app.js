@@ -17,6 +17,16 @@ const CONFIG = {
   localStorageKey: "colony-task-status-v1"
 };
 
+const CURRENT_BREEDER_CAGES = {
+  "CDKL5 KO": ["450304", "450316", "450372", "496761"],
+  "CDKL5 FS": ["450195", "450243", "450278", "450332", "500423"],
+  "CDKL5 Flox": ["450271"],
+  "Satb2 Cre": ["500301"],
+  "C57": ["450210", "450225", "450281", "450323", "450394"],
+  "CDKL5 KO x Satb2": ["450298", "500302"],
+  "CDKL5 FS x Satb2": ["500422"]
+};
+
 const els = {
   rows: document.querySelector("#taskRows"),
   template: document.querySelector("#taskRowTemplate"),
@@ -115,6 +125,10 @@ function isFsLine(line) {
   return /\bFS\b/i.test(line);
 }
 
+function isExactFsSheet(line) {
+  return normalizedText(line) === "cdkl5 fs";
+}
+
 function isInjectionTask(task) {
   return task.task === "Pup ASO Injection 1" || task.task === "Pup ASO Injection 2";
 }
@@ -125,6 +139,10 @@ function isReviewAfterWindowTask(task) {
 
 function taskCategoryClass(task) {
   return task.category ? `task-category-${task.category}` : "";
+}
+
+function isC57Line(line) {
+  return normalizedText(line) === "c57";
 }
 
 function loadCompletionState() {
@@ -214,9 +232,7 @@ function isCageNumber(value) {
 }
 
 function cageValueFromCells(cells) {
-  if (isCageNumber(cells[1])) return cells[1];
-  if (isCageNumber(cells[0])) return cells[0];
-  return "";
+  return cells.slice(0, 4).find((cell) => isCageNumber(cell)) || "";
 }
 
 function cleanCage(value) {
@@ -257,7 +273,7 @@ function sectionFromRow(cells) {
   const filled = cells.filter(Boolean);
   if (filled.length > 3) return "";
   const text = filled.join(" ").trim().toLowerCase();
-  if (/^breeders?$|^breeding$/.test(text)) return "breeding";
+  if (/\bbreeders?\b|\bbreeding\b/.test(text)) return "breeding";
   if (/^weanlings?$/.test(text)) return "weanlings";
   if (/^adults?$/.test(text)) return "adults";
   if (/^males?$/.test(text)) return "adults";
@@ -377,62 +393,69 @@ function buildTasks(rows) {
         row.notes || ""
       ].filter(Boolean);
 
-      tasks.push(makeTask({
-        task: "Ear tag",
-        category: "maintenance",
-        line: row.line,
-        cage: row.cage,
-        row: row.row,
-        dob: row.litter.dob,
-        dueStart: addDays(row.litter.dob, 14),
-        dueEnd: addDays(row.litter.dob, 20),
-        age,
-        details: detailParts.join(" | "),
-        reviewNeeded: /tagged\?/i.test(row.litter.label || "") || /review/i.test(row.notes || "")
-      }));
+      if (!isC57Line(row.line)) {
+        tasks.push(makeTask({
+          task: "Ear tag",
+          category: "maintenance",
+          line: row.line,
+          cage: row.cage,
+          row: row.row,
+          dob: row.litter.dob,
+          dueStart: addDays(row.litter.dob, 14),
+          dueEnd: addDays(row.litter.dob, 20),
+          age,
+          details: detailParts.join(" | "),
+          reviewNeeded: /tagged\?/i.test(row.litter.label || "") || /review/i.test(row.notes || "")
+        }));
+      }
 
+      const weanStart = addDays(row.litter.dob, 22);
+      const weanEnd = addDays(row.litter.dob, 28);
       tasks.push(makeTask({
-        task: "Wean",
+        task: CONFIG.today > weanEnd ? "Wean info to spreadsheet" : "Wean",
         category: "maintenance",
         line: row.line,
         cage: row.cage,
         row: row.row,
         dob: row.litter.dob,
-        dueStart: addDays(row.litter.dob, 22),
-        dueEnd: addDays(row.litter.dob, 28),
+        dueStart: weanStart,
+        dueEnd: weanEnd,
         age,
         details: detailParts.join(" | "),
         reviewNeeded: /weaned/i.test(row.notes || "")
       }));
 
-      if (isFsLine(row.line)) {
-        tasks.push(makeTask({
-          task: "Pup ASO Injection 1",
-          category: "experimental",
-          line: row.line,
-          cage: row.cage,
-          row: row.row,
-          dob: row.litter.dob,
-          dueStart: row.litter.dob,
-          dueEnd: addDays(row.litter.dob, 2),
-          age,
-          details: `FS pup experimental timeline | ${detailParts.join(" | ")}`,
-          reviewNeeded: false
-        }));
+      if (isExactFsSheet(row.line)) {
+        const injectionTasks = [
+          {
+            task: "Pup ASO Injection 1",
+            dueStart: row.litter.dob,
+            dueEnd: addDays(row.litter.dob, 2)
+          },
+          {
+            task: "Pup ASO Injection 2",
+            dueStart: addDays(row.litter.dob, 6),
+            dueEnd: addDays(row.litter.dob, 6)
+          }
+        ];
 
-        tasks.push(makeTask({
-          task: "Pup ASO Injection 2",
-          category: "experimental",
-          line: row.line,
-          cage: row.cage,
-          row: row.row,
-          dob: row.litter.dob,
-          dueStart: addDays(row.litter.dob, 6),
-          dueEnd: addDays(row.litter.dob, 6),
-          age,
-          details: `FS pup experimental timeline | ${detailParts.join(" | ")}`,
-          reviewNeeded: false
-        }));
+        injectionTasks
+          .filter((task) => task.dueEnd >= CONFIG.today)
+          .forEach((task) => {
+            tasks.push(makeTask({
+              task: task.task,
+              category: "experimental",
+              line: row.line,
+              cage: row.cage,
+              row: row.row,
+              dob: row.litter.dob,
+              dueStart: task.dueStart,
+              dueEnd: task.dueEnd,
+              age,
+              details: `FS pup experimental timeline | ${detailParts.join(" | ")}`,
+              reviewNeeded: false
+            }));
+          });
 
         tasks.push(makeTask({
           task: "Plasma/Tissue Collection",
@@ -451,6 +474,7 @@ function buildTasks(rows) {
     }
 
     if (row.adultCage && row.missingTags) {
+      if (isC57Line(row.line)) return;
       tasks.push(makeTask({
         task: "Adult missing tags",
         category: "maintenance",
@@ -553,12 +577,13 @@ function replacementPrograms(animal) {
 
 function buildBreederData(rows) {
   const cages = rows.filter((row) => row.type === "cage");
+  const isBreederCage = (cage) => cage.section === "breeding" || CURRENT_BREEDER_CAGES[cage.line]?.includes(cage.cage);
   const breederCages = cages
-    .filter((cage) => cage.section === "breeding")
+    .filter(isBreederCage)
     .map((cage) => ({ ...cage, breederStatus: breederStatus(cage) }));
 
   const replacementOptions = cages
-    .filter((cage) => cage.section !== "breeding")
+    .filter((cage) => !isBreederCage(cage))
     .flatMap((cage) => cage.animals
       .flatMap((animal) => replacementPrograms({ ...animal, line: cage.line })
         .map((program) => ({ ...animal, cage: cage.cage, line: cage.line, section: cage.section, program }))));
@@ -965,9 +990,10 @@ function replacementGroups(options) {
   const programs = [...new Set(options.map((option) => option.program))].sort();
 
   programs.forEach((program) => {
-    const programBlock = document.createElement("section");
+    const programBlock = document.createElement("details");
     programBlock.className = "replacement-program";
-    const title = document.createElement("h3");
+    programBlock.open = false;
+    const title = document.createElement("summary");
     title.textContent = program;
     programBlock.append(title);
 
