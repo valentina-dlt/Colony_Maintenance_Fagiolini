@@ -328,10 +328,6 @@ tr.task-category-experimental:hover {
   border-left-color: var(--overdue);
 }
 
-.breeder-too-young {
-  border-left-color: var(--upcoming);
-}
-
 .breeder-card-title {
   font-size: 18px;
   font-weight: 900;
@@ -361,13 +357,35 @@ tr.task-category-experimental:hover {
   background: var(--overdue);
 }
 
-.breeder-too-young .breeder-status {
-  background: var(--upcoming);
-}
-
 .breeder-card small,
 .replacement-card small {
   color: #3f4a43;
+}
+
+.replacement-programs {
+  display: grid;
+  gap: 18px;
+}
+
+.replacement-program {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.replacement-program h3 {
+  font-size: 20px;
+  margin: 0 0 10px;
+}
+
+.replacement-sex-group {
+  margin-top: 12px;
+}
+
+.replacement-sex-group h4 {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 8px;
+  text-transform: uppercase;
 }
 
 .calendar-grid {

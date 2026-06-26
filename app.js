@@ -209,13 +209,44 @@ function isCageNumber(value) {
   return /^\??\d{5,6}\??$/.test(String(value || "").trim());
 }
 
+function cageValueFromCells(cells) {
+  if (isCageNumber(cells[1])) return cells[1];
+  if (isCageNumber(cells[0])) return cells[0];
+  return "";
+}
+
 function cleanCage(value) {
   return String(value || "").replace(/[^\d]/g, "");
 }
 
+function sexIndex(cells) {
+  return cells.findIndex((cell) => /^[MF]$/i.test(String(cell || "").trim()));
+}
+
+function parseAnimal(cells, rowNumber) {
+  const foundSexIndex = sexIndex(cells);
+  if (foundSexIndex < 0) return null;
+  const dateIndex = cells.findIndex((cell) => normalizeDate(cell));
+  const ageIndex = dateIndex >= 0 ? cells.findIndex((cell, index) => index > dateIndex && numericAge(cell) !== null) : -1;
+  const tagIndex = foundSexIndex > 0 ? foundSexIndex - 1 : -1;
+  const genotypeEnd = tagIndex > 2 ? tagIndex : foundSexIndex;
+  const genotype = cells.slice(2, genotypeEnd).filter(Boolean).join(" / ");
+
+  return {
+    row: rowNumber,
+    genotype,
+    tag: tagIndex >= 0 ? cells[tagIndex] || "" : "",
+    sex: cells[foundSexIndex] || "",
+    dob: dateIndex >= 0 ? normalizeDate(cells[dateIndex]) : "",
+    age: ageIndex >= 0 ? numericAge(cells[ageIndex]) : null,
+    experiment: cells.slice(foundSexIndex + 1).filter(Boolean).join(" | "),
+    notes: cells.join(" ").trim()
+  };
+}
+
 function isLikelyAnimalRow(cells) {
   const text = cells.join(" ").toLowerCase();
-  return /\b[fm]\b/i.test(cells.join(" ")) && !/pups?|preg|breeding|weanlings|adults|males|females|to genotype/.test(text);
+  return sexIndex(cells) >= 0 && !/pups?|preg|breeding|weanlings|adults|males|females|to genotype/.test(text);
 }
 
 function sectionFromRow(cells) {
@@ -287,28 +318,23 @@ function parseSheetRows(sheetName, tableRows) {
       return;
     }
 
-    if (isCageNumber(cells[1])) {
+    const cageValue = cageValueFromCells(cells);
+    if (cageValue) {
       flushAdultCage();
-      currentCage = cleanCage(cells[1]);
+      currentCage = cleanCage(cageValue);
       cageAnimals = [];
+      const parsedDam = parseAnimal(cells, rowNumber);
       currentDam = {
-        genotype: [cells[2], cells[3]].filter(Boolean).join(" / "),
-        tag: cells[4] || "",
-        sex: cells[5] || "",
-        dob: normalizeDate(cells[6])
+        genotype: parsedDam?.genotype || "",
+        tag: parsedDam?.tag || "",
+        sex: parsedDam?.sex || "",
+        dob: parsedDam?.dob || ""
       };
     }
 
     if (currentCage && isLikelyAnimalRow(cells)) {
-      cageAnimals.push({
-        row: rowNumber,
-        genotype: [cells[2], cells[3]].filter(Boolean).join(" / "),
-        tag: cells[4] || "",
-        sex: cells[5] || "",
-        dob: normalizeDate(cells[6]),
-        age: numericAge(cells[7]),
-        notes: joined
-      });
+      const animal = parseAnimal(cells, rowNumber);
+      if (animal) cageAnimals.push(animal);
     }
 
     const pupIndex = cells.findIndex((cell) => /^(pups?|tagged\?)$/i.test(String(cell || "").trim()));
@@ -445,9 +471,80 @@ function buildTasks(rows) {
 
 function breederStatus(cage) {
   const ages = cage.animals.map((animal) => animal.age).filter((age) => Number.isFinite(age));
-  if (ages.some((age) => age > 200)) return "Replace";
-  if (ages.some((age) => age >= 60 && age <= 200)) return "Good";
-  return "Too young";
+  if (ages.some((age) => age >= 200)) return "Replace";
+  return "Good";
+}
+
+function normalizedText(value) {
+  return String(value || "").toLowerCase();
+}
+
+function hasHet(animal) {
+  return /\bhet\b/i.test(animal.genotype);
+}
+
+function hasFlFl(animal) {
+  return /fl\/fl|flox\/flox|cdkl5 fl\/fl/i.test(animal.genotype);
+}
+
+function hasSatPlusPlus(animal) {
+  return /\+\/\+|satb2 cre\+\/cre\+/i.test(animal.genotype);
+}
+
+function hasSatPlus(animal) {
+  return /(^|\/|\s)\+($|\/|\s)|\+\/-|cre\+/i.test(animal.genotype);
+}
+
+function isAgeAppropriate(animal) {
+  return Number.isFinite(animal.age) && animal.age >= 60 && animal.age <= 200;
+}
+
+function isMale(animal) {
+  return /^M$/i.test(animal.sex);
+}
+
+function isFemale(animal) {
+  return /^F$/i.test(animal.sex);
+}
+
+function replacementPrograms(animal) {
+  if (!isAgeAppropriate(animal)) return [];
+  const line = normalizedText(animal.line);
+  const programs = [];
+
+  if (line === "c57") {
+    programs.push("C57");
+    if (isMale(animal)) {
+      programs.push("CDKL5 KO", "CDKL5 FS", "CDKL5 Flox", "Satb2 Cre");
+    }
+  }
+
+  if (line === "cdkl5 ko" && isFemale(animal) && hasHet(animal)) {
+    programs.push("CDKL5 KO");
+  }
+
+  if (line === "cdkl5 fs" && isFemale(animal) && hasHet(animal)) {
+    programs.push("CDKL5 FS");
+  }
+
+  if (line === "cdkl5 flox" && isFemale(animal) && hasFlFl(animal)) {
+    programs.push("CDKL5 Flox");
+  }
+
+  if (line === "satb2 cre") {
+    if (isFemale(animal) && hasSatPlusPlus(animal)) programs.push("Satb2 Cre");
+    if (isMale(animal) && hasSatPlusPlus(animal)) programs.push("CDKL5 KO x Satb2", "CDKL5 FS x Satb2");
+  }
+
+  if (line === "cdkl5 ko x satb2" && isFemale(animal) && hasHet(animal) && hasSatPlus(animal)) {
+    programs.push("CDKL5 KO x Satb2");
+  }
+
+  if (line === "cdkl5 fs x satb2" && isFemale(animal) && hasHet(animal) && hasSatPlus(animal)) {
+    programs.push("CDKL5 FS x Satb2");
+  }
+
+  return [...new Set(programs)];
 }
 
 function buildBreederData(rows) {
@@ -459,8 +556,8 @@ function buildBreederData(rows) {
   const replacementOptions = cages
     .filter((cage) => cage.section !== "breeding")
     .flatMap((cage) => cage.animals
-      .filter((animal) => Number.isFinite(animal.age) && animal.age >= 60 && animal.age <= 200)
-      .map((animal) => ({ ...animal, cage: cage.cage, line: cage.line, section: cage.section })));
+      .flatMap((animal) => replacementPrograms({ ...animal, line: cage.line })
+        .map((program) => ({ ...animal, cage: cage.cage, line: cage.line, section: cage.section, program }))));
 
   return { breederCages, replacementOptions };
 }
@@ -753,10 +850,12 @@ function renderBreeders(rows) {
     cage.animals.map((animal) => animal.notes).join(" ")
   ]));
   const replacementOptions = rawData.replacementOptions.filter((animal) => matchesBreederFilters([
+    animal.program,
     animal.line,
     animal.cage,
     animal.tag,
     animal.sex,
+    animal.genotype,
     animal.notes
   ]));
   els.breedersView.innerHTML = "";
@@ -767,7 +866,6 @@ function renderBreeders(rows) {
     <div><strong>${breederCages.length}</strong><span>Breeding cages</span></div>
     <div><strong>${breederCages.filter((cage) => cage.breederStatus === "Good").length}</strong><span>Good</span></div>
     <div><strong>${breederCages.filter((cage) => cage.breederStatus === "Replace").length}</strong><span>Replace</span></div>
-    <div><strong>${replacementOptions.length}</strong><span>Age-only replacement options</span></div>
   `;
   els.breedersView.append(summary);
 
@@ -782,11 +880,8 @@ function renderBreeders(rows) {
 
   const replacementSection = document.createElement("section");
   replacementSection.className = "breeder-section";
-  replacementSection.innerHTML = "<h2>Replacement Options <span>age-only until line criteria are set</span></h2>";
-  const replacementGrid = document.createElement("div");
-  replacementGrid.className = "replacement-grid";
-  replacementOptions.forEach((animal) => replacementGrid.append(replacementCard(animal)));
-  replacementSection.append(replacementGrid);
+  replacementSection.innerHTML = "<h2>Replacement Options <span>No filters for inbreeding.</span></h2>";
+  replacementSection.append(replacementGroups(replacementOptions));
   els.breedersView.append(replacementSection);
 }
 
@@ -819,11 +914,52 @@ function replacementCard(animal) {
   const title = document.createElement("strong");
   title.textContent = `Cage ${animal.cage} | ${animal.tag || "unmarked"}`;
   const meta = document.createElement("p");
-  meta.textContent = `${animal.line} | ${animal.sex || "?"} | P${animal.age}`;
+  meta.textContent = `${animal.line} | ${animal.sex || "?"} | P${animal.age} | ${animal.genotype || "genotype ?"}`;
   const note = document.createElement("small");
-  note.textContent = "Replacement option pending genetic-line criteria";
+  note.textContent = animal.experiment || animal.notes || "";
   card.append(title, meta, note);
   return card;
+}
+
+function replacementGroups(options) {
+  const wrap = document.createElement("div");
+  wrap.className = "replacement-programs";
+  const programs = [...new Set(options.map((option) => option.program))].sort();
+
+  programs.forEach((program) => {
+    const programBlock = document.createElement("section");
+    programBlock.className = "replacement-program";
+    const title = document.createElement("h3");
+    title.textContent = program;
+    programBlock.append(title);
+
+    [["M", "Males"], ["F", "Females"]].forEach(([sex, label]) => {
+      const sexOptions = options.filter((option) => option.program === program && option.sex.toUpperCase() === sex);
+      const sexBlock = document.createElement("div");
+      sexBlock.className = "replacement-sex-group";
+      const sexTitle = document.createElement("h4");
+      sexTitle.textContent = label;
+      sexBlock.append(sexTitle);
+
+      if (sexOptions.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "calendar-empty";
+        empty.textContent = "No options";
+        sexBlock.append(empty);
+      } else {
+        const grid = document.createElement("div");
+        grid.className = "replacement-grid";
+        sexOptions.forEach((animal) => grid.append(replacementCard(animal)));
+        sexBlock.append(grid);
+      }
+
+      programBlock.append(sexBlock);
+    });
+
+    wrap.append(programBlock);
+  });
+
+  return wrap;
 }
 
 function setActiveView(view) {
