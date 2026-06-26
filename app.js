@@ -738,7 +738,7 @@ function renderTable(tasks) {
     row.querySelector(".cage").textContent = task.cage;
     row.querySelector(".line").textContent = task.line;
     row.querySelector(".window").textContent = `${formatDate(task.dueStart)} - ${formatDate(task.dueEnd)}`;
-    row.querySelector(".age").textContent = formatAge(task.age);
+    row.querySelector(".age").textContent = formatAge(task.age) || "P?";
     row.querySelector(".details").textContent = task.details || "";
 
     els.rows.append(row);
@@ -778,8 +778,8 @@ function renderToday(tasks) {
 function taskCard(task) {
   const card = document.createElement("article");
   card.className = `task-card task-card-${task.state} ${taskCategoryClass(task)}`;
-  const age = formatAge(task.age);
-  const meta = age ? `${task.line} | ${age}` : task.line;
+  const age = formatAge(task.age) || "P?";
+  const meta = `${task.line} | ${age}`;
 
   const top = document.createElement("div");
   top.className = "task-card-top";
