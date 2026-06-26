@@ -96,6 +96,13 @@ function isActionableToday(task) {
   return task.state !== "done" && task.dueStart <= CONFIG.today;
 }
 
+function todayBucket(task) {
+  if (task.state === "review") return "review";
+  if (task.dueEnd < CONFIG.today) return "overdue";
+  if (task.dueEnd === CONFIG.today) return "dueToday";
+  return "todo";
+}
+
 function taskAppearsOnDate(task, date, mode) {
   if (task.state === "done") return false;
   if (mode === "due") return task.dueEnd === date;
@@ -480,13 +487,13 @@ function renderToday(tasks) {
 
   const groups = [
     ["overdue", "Overdue"],
-    ["due", "Due Today"],
-    ["upcoming", "Workable Today"],
+    ["dueToday", "Due Today"],
+    ["todo", "To-Do"],
     ["review", "Needs Review"]
   ];
 
   groups.forEach(([state, title]) => {
-    const groupTasks = todayTasks.filter((task) => task.state === state);
+    const groupTasks = todayTasks.filter((task) => todayBucket(task) === state);
     if (groupTasks.length === 0) return;
     const section = document.createElement("section");
     section.className = "today-group";
