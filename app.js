@@ -2,7 +2,6 @@ const CONFIG = {
   today: new Date().toISOString().slice(0, 10),
   spreadsheetId: "1G_w47rJrhOWsuK_Qpvs8vgC7VCyYLnjR6QvCZ87rR6k",
   sourceSheets: [
-    "CLS 13",
     "CDKL5 KO",
     "CDKL5 FS",
     "CDKL5 Flox",
@@ -81,6 +80,23 @@ function formatDate(dateString) {
 function formatShortDate(dateString) {
   const date = new Date(`${dateString}T00:00:00`);
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function formatAge(value) {
+  if (value === "" || value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.map(formatAge).filter(Boolean).join(", ");
+  if (Number.isFinite(value)) return `P${value}`;
+  const text = String(value).trim();
+  if (!text) return "";
+  return text
+    .split(",")
+    .map((part) => {
+      const trimmed = part.trim();
+      if (!trimmed) return "";
+      return /^p/i.test(trimmed) ? `P${trimmed.replace(/^p/i, "")}` : `P${trimmed}`;
+    })
+    .filter(Boolean)
+    .join(", ");
 }
 
 function dayName(dateString, format = "short") {
@@ -288,6 +304,13 @@ function numericAge(value) {
   return match ? Number(match[0]) : null;
 }
 
+function animalAgeSummary(animals) {
+  const ages = animals
+    .map((animal) => animal.age)
+    .filter((age) => Number.isFinite(age));
+  return [...new Set(ages)].sort((a, b) => a - b);
+}
+
 function parseSheetRows(sheetName, tableRows) {
   const rows = [];
   let currentCage = "";
@@ -318,6 +341,7 @@ function parseSheetRows(sheetName, tableRows) {
         row: cageAnimals[0].row,
         adultCage: true,
         animals: cageAnimals.length,
+        age: animalAgeSummary(cageAnimals),
         missingTags: true,
         notes: noteText || "Adult cage has missing or unclear ear tags."
       });
@@ -486,7 +510,7 @@ function buildTasks(rows) {
         dob: "",
         dueStart: CONFIG.today,
         dueEnd: CONFIG.today,
-        age: "",
+        age: row.age || "",
         details: `${row.animals || "Unknown"} animals. ${row.notes || ""}`,
         reviewNeeded: true
       }));
@@ -714,7 +738,7 @@ function renderTable(tasks) {
     row.querySelector(".cage").textContent = task.cage;
     row.querySelector(".line").textContent = task.line;
     row.querySelector(".window").textContent = `${formatDate(task.dueStart)} - ${formatDate(task.dueEnd)}`;
-    row.querySelector(".age").textContent = task.age === "" ? "" : `P${task.age}`;
+    row.querySelector(".age").textContent = formatAge(task.age);
     row.querySelector(".details").textContent = task.details || "";
 
     els.rows.append(row);
@@ -754,7 +778,8 @@ function renderToday(tasks) {
 function taskCard(task) {
   const card = document.createElement("article");
   card.className = `task-card task-card-${task.state} ${taskCategoryClass(task)}`;
-  const meta = task.age === "" ? task.line : `${task.line} | P${task.age}`;
+  const age = formatAge(task.age);
+  const meta = age ? `${task.line} | ${age}` : task.line;
 
   const top = document.createElement("div");
   top.className = "task-card-top";
@@ -945,8 +970,8 @@ function breederLineGroups(cages) {
 function breederCageCard(cage) {
   const card = document.createElement("article");
   card.className = `breeder-card breeder-${cage.breederStatus.toLowerCase().replace(" ", "-")}`;
-  const ages = cage.animals.map((animal) => Number.isFinite(animal.age) ? `P${animal.age}` : "P?");
-  const animals = cage.animals.map((animal) => `${animal.tag || "unmarked"} ${animal.sex || "?"} ${Number.isFinite(animal.age) ? `P${animal.age}` : "P?"}`).join(", ");
+  const ages = cage.animals.map((animal) => formatAge(animal.age) || "P?");
+  const animals = cage.animals.map((animal) => `${animal.tag || "unmarked"} ${animal.sex || "?"} ${formatAge(animal.age) || "P?"}`).join(", ");
   card.innerHTML = "";
 
   const title = document.createElement("div");
@@ -969,7 +994,7 @@ function replacementCard(animal) {
   const title = document.createElement("strong");
   title.textContent = `Cage ${animal.cage} | ${animal.tag || "unmarked"}`;
   const meta = document.createElement("p");
-  meta.textContent = `${animal.line} | ${animal.sex || "?"} | P${animal.age} | ${animal.genotype || "genotype ?"}`;
+  meta.textContent = `${animal.line} | ${animal.sex || "?"} | ${formatAge(animal.age) || "P?"} | ${animal.genotype || "genotype ?"}`;
   const note = document.createElement("small");
   note.textContent = animal.experiment || animal.notes || "";
   card.append(title, meta, note);
