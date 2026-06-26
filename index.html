@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Colony Task Launchpad</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Mouse colony maintenance</p>
+        <h1>Colony Task Launchpad</h1>
+      </div>
+      <div class="header-actions">
+        <button id="refreshButton" type="button" title="Refresh tasks">Refresh</button>
+        <span id="lastUpdated" class="timestamp"></span>
+        <span id="refreshSchedule" class="timestamp"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary-grid" aria-label="Task summary">
+        <div class="metric overdue">
+          <span id="overdueCount">0</span>
+          <p>Overdue</p>
+        </div>
+        <div class="metric due">
+          <span id="dueCount">0</span>
+          <p>Due Now</p>
+        </div>
+        <div class="metric upcoming">
+          <span id="upcomingCount">0</span>
+          <p>Upcoming</p>
+        </div>
+        <div class="metric review">
+          <span id="reviewCount">0</span>
+          <p>Review</p>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Filters">
+        <label>
+          Status
+          <select id="statusFilter">
+            <option value="open">Open</option>
+            <option value="all">All</option>
+            <option value="overdue">Overdue</option>
+            <option value="due">Due Now</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="done">Done</option>
+          </select>
+        </label>
+        <label>
+          Task
+          <select id="taskFilter">
+            <option value="all">All tasks</option>
+            <option value="Ear tag">Ear tag</option>
+            <option value="Wean">Wean</option>
+            <option value="Adult missing tags">Adult missing tags</option>
+          </select>
+        </label>
+        <label>
+          Line
+          <select id="lineFilter">
+            <option value="all">All lines</option>
+          </select>
+        </label>
+        <label class="search-box">
+          Search
+          <input id="searchInput" type="search" placeholder="Cage, line, note">
+        </label>
+      </section>
+
+      <section class="task-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Done</th>
+              <th>State</th>
+              <th>Task</th>
+              <th>Cage</th>
+              <th>Line</th>
+              <th>Window</th>
+              <th>Age</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="taskRows"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <template id="taskRowTemplate">
+      <tr>
+        <td><input class="done-toggle" type="checkbox" aria-label="Mark task done"></td>
+        <td><span class="state-pill"></span></td>
+        <td class="task-name"></td>
+        <td class="cage"></td>
+        <td class="line"></td>
+        <td class="window"></td>
+        <td class="age"></td>
+        <td class="details"></td>
+      </tr>
+    </template>
+
+    <script src="sample-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
