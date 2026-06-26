@@ -31,6 +31,7 @@ const els = {
   tableView: document.querySelector("#tableView"),
   todayView: document.querySelector("#todayView"),
   calendarView: document.querySelector("#calendarView"),
+  breedersView: document.querySelector("#breedersView"),
   calendarHeader: document.querySelector("#calendarHeader"),
   calendarKicker: document.querySelector("#calendarKicker"),
   calendarTitle: document.querySelector("#calendarTitle"),
@@ -42,6 +43,7 @@ const els = {
 };
 
 let taskCache = [];
+let sourceRows = [];
 let completionState = loadCompletionState();
 let activeView = "all";
 let calendarMode = "window";
@@ -113,6 +115,10 @@ function isFsLine(line) {
   return /\bFS\b/i.test(line);
 }
 
+function isInjectionTask(task) {
+  return task.task === "Pup ASO Injection 1" || task.task === "Pup ASO Injection 2";
+}
+
 function taskCategoryClass(task) {
   return task.category ? `task-category-${task.category}` : "";
 }
@@ -137,6 +143,7 @@ function classifyTask(task) {
   if (completionState[task.id]?.done) return "done";
   if (task.reviewNeeded) return "review";
   const today = CONFIG.today;
+  if (isInjectionTask(task) && today > task.dueEnd) return "review";
   if (today > task.dueEnd) return "overdue";
   if (today >= task.dueStart && today <= task.dueEnd) return "due";
   return "upcoming";
@@ -211,14 +218,41 @@ function isLikelyAnimalRow(cells) {
   return /\b[fm]\b/i.test(cells.join(" ")) && !/pups?|preg|breeding|weanlings|adults|males|females|to genotype/.test(text);
 }
 
+function sectionFromRow(cells) {
+  const filled = cells.filter(Boolean);
+  if (filled.length > 3) return "";
+  const text = filled.join(" ").trim().toLowerCase();
+  if (/^breeders?$|^breeding$/.test(text)) return "breeding";
+  if (/^weanlings?$/.test(text)) return "weanlings";
+  if (/^adults?$/.test(text)) return "adults";
+  if (/^males?$/.test(text)) return "adults";
+  if (/^females?$/.test(text)) return "adults";
+  return "";
+}
+
+function numericAge(value) {
+  const match = String(value || "").match(/\d+/);
+  return match ? Number(match[0]) : null;
+}
+
 function parseSheetRows(sheetName, tableRows) {
   const rows = [];
   let currentCage = "";
   let currentDam = null;
   let cageAnimals = [];
+  let currentSection = "";
 
   function flushAdultCage() {
     if (!currentCage || cageAnimals.length === 0) return;
+    rows.push({
+      type: "cage",
+      line: sheetName,
+      cage: currentCage,
+      section: currentSection || "unknown",
+      row: cageAnimals[0].row,
+      animals: cageAnimals
+    });
+
     const missingTags = cageAnimals.some((animal) => {
       const tag = String(animal.tag || "").trim();
       return !tag || /missing|none|nt|check|tagged\?|\?$/.test(tag.toLowerCase());
@@ -241,6 +275,9 @@ function parseSheetRows(sheetName, tableRows) {
     const cells = Array.from({ length: 13 }, (_, col) => readCell(row.c?.[col]));
     const rowNumber = index + 1;
     const joined = cells.join(" ").trim();
+
+    const nextSection = sectionFromRow(cells);
+    if (nextSection) currentSection = nextSection;
 
     if (!joined) {
       flushAdultCage();
@@ -265,8 +302,11 @@ function parseSheetRows(sheetName, tableRows) {
     if (currentCage && isLikelyAnimalRow(cells)) {
       cageAnimals.push({
         row: rowNumber,
+        genotype: [cells[2], cells[3]].filter(Boolean).join(" / "),
         tag: cells[4] || "",
         sex: cells[5] || "",
+        dob: normalizeDate(cells[6]),
+        age: numericAge(cells[7]),
         notes: joined
       });
     }
@@ -297,6 +337,8 @@ function buildTasks(rows) {
   const tasks = [];
 
   rows.forEach((row) => {
+    if (row.type === "cage") return;
+
     if (row.litter?.dob) {
       const age = daysBetween(row.litter.dob, CONFIG.today);
       const detailParts = [
@@ -399,6 +441,28 @@ function buildTasks(rows) {
     const stateRank = { overdue: 0, due: 1, review: 2, upcoming: 3, done: 4 };
     return stateRank[a.state] - stateRank[b.state] || a.dueEnd.localeCompare(b.dueEnd);
   });
+}
+
+function breederStatus(cage) {
+  const ages = cage.animals.map((animal) => animal.age).filter((age) => Number.isFinite(age));
+  if (ages.some((age) => age > 200)) return "Replace";
+  if (ages.some((age) => age >= 60 && age <= 200)) return "Good";
+  return "Too young";
+}
+
+function buildBreederData(rows) {
+  const cages = rows.filter((row) => row.type === "cage");
+  const breederCages = cages
+    .filter((cage) => cage.section === "breeding")
+    .map((cage) => ({ ...cage, breederStatus: breederStatus(cage) }));
+
+  const replacementOptions = cages
+    .filter((cage) => cage.section !== "breeding")
+    .flatMap((cage) => cage.animals
+      .filter((animal) => Number.isFinite(animal.age) && animal.age >= 60 && animal.age <= 200)
+      .map((animal) => ({ ...animal, cage: cage.cage, line: cage.line, section: cage.section })));
+
+  return { breederCages, replacementOptions };
 }
 
 function loadGoogleSheet(sheetName) {
@@ -671,6 +735,97 @@ function renderCalendar(tasks, view) {
   }
 }
 
+function matchesBreederFilters(valueParts) {
+  const line = els.lineFilter.value;
+  const query = els.searchInput.value.trim().toLowerCase();
+  const haystack = valueParts.filter(Boolean).join(" ").toLowerCase();
+  if (line !== "all" && !valueParts.includes(line)) return false;
+  if (!query) return true;
+  return haystack.includes(query);
+}
+
+function renderBreeders(rows) {
+  const rawData = buildBreederData(rows);
+  const breederCages = rawData.breederCages.filter((cage) => matchesBreederFilters([
+    cage.line,
+    cage.cage,
+    cage.breederStatus,
+    cage.animals.map((animal) => animal.notes).join(" ")
+  ]));
+  const replacementOptions = rawData.replacementOptions.filter((animal) => matchesBreederFilters([
+    animal.line,
+    animal.cage,
+    animal.tag,
+    animal.sex,
+    animal.notes
+  ]));
+  els.breedersView.innerHTML = "";
+
+  const summary = document.createElement("section");
+  summary.className = "breeder-summary";
+  summary.innerHTML = `
+    <div><strong>${breederCages.length}</strong><span>Breeding cages</span></div>
+    <div><strong>${breederCages.filter((cage) => cage.breederStatus === "Good").length}</strong><span>Good</span></div>
+    <div><strong>${breederCages.filter((cage) => cage.breederStatus === "Replace").length}</strong><span>Replace</span></div>
+    <div><strong>${replacementOptions.length}</strong><span>Age-only replacement options</span></div>
+  `;
+  els.breedersView.append(summary);
+
+  const breederSection = document.createElement("section");
+  breederSection.className = "breeder-section";
+  breederSection.innerHTML = "<h2>Breeding Cages</h2>";
+  const breederGrid = document.createElement("div");
+  breederGrid.className = "breeder-grid";
+  breederCages.forEach((cage) => breederGrid.append(breederCageCard(cage)));
+  breederSection.append(breederGrid);
+  els.breedersView.append(breederSection);
+
+  const replacementSection = document.createElement("section");
+  replacementSection.className = "breeder-section";
+  replacementSection.innerHTML = "<h2>Replacement Options <span>age-only until line criteria are set</span></h2>";
+  const replacementGrid = document.createElement("div");
+  replacementGrid.className = "replacement-grid";
+  replacementOptions.forEach((animal) => replacementGrid.append(replacementCard(animal)));
+  replacementSection.append(replacementGrid);
+  els.breedersView.append(replacementSection);
+}
+
+function breederCageCard(cage) {
+  const card = document.createElement("article");
+  card.className = `breeder-card breeder-${cage.breederStatus.toLowerCase().replace(" ", "-")}`;
+  const ages = cage.animals.map((animal) => Number.isFinite(animal.age) ? `P${animal.age}` : "P?");
+  const animals = cage.animals.map((animal) => `${animal.tag || "unmarked"} ${animal.sex || "?"} ${Number.isFinite(animal.age) ? `P${animal.age}` : "P?"}`).join(", ");
+  card.innerHTML = "";
+
+  const title = document.createElement("div");
+  title.className = "breeder-card-title";
+  title.textContent = `Cage ${cage.cage}`;
+  const line = document.createElement("p");
+  line.textContent = cage.line;
+  const status = document.createElement("span");
+  status.className = "breeder-status";
+  status.textContent = cage.breederStatus;
+  const ageLine = document.createElement("strong");
+  ageLine.textContent = ages.join(", ");
+  const detail = document.createElement("small");
+  detail.textContent = animals;
+  card.append(title, line, status, ageLine, detail);
+  return card;
+}
+
+function replacementCard(animal) {
+  const card = document.createElement("article");
+  card.className = "replacement-card";
+  const title = document.createElement("strong");
+  title.textContent = `Cage ${animal.cage} | ${animal.tag || "unmarked"}`;
+  const meta = document.createElement("p");
+  meta.textContent = `${animal.line} | ${animal.sex || "?"} | P${animal.age}`;
+  const note = document.createElement("small");
+  note.textContent = "Replacement option pending genetic-line criteria";
+  card.append(title, meta, note);
+  return card;
+}
+
 function setActiveView(view) {
   activeView = view;
   els.viewTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
@@ -690,12 +845,14 @@ function render() {
   els.tableView.classList.toggle("hidden", activeView !== "all");
   els.todayView.classList.toggle("hidden", activeView !== "today");
   els.calendarView.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
+  els.breedersView.classList.toggle("hidden", activeView !== "breeders");
   els.calendarHeader.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
   els.statusFilter.disabled = activeView !== "all";
 
   if (activeView === "all") renderTable(tasks);
   if (activeView === "today") renderToday(tasks);
   if (activeView === "week" || activeView === "month") renderCalendar(tasks, activeView);
+  if (activeView === "breeders") renderBreeders(sourceRows);
 }
 
 async function refresh() {
@@ -703,6 +860,7 @@ async function refresh() {
   els.refreshButton.textContent = "Refreshing";
   try {
     const rows = await loadRows();
+    sourceRows = rows;
     taskCache = buildTasks(rows);
     populateLineFilter(taskCache);
     render();

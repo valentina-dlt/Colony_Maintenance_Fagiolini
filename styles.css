@@ -268,6 +268,108 @@ tr.task-category-experimental:hover {
   padding: 18px;
 }
 
+.breeders-view {
+  display: grid;
+  gap: 18px;
+}
+
+.breeder-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.breeder-summary div {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.breeder-summary strong {
+  display: block;
+  font-size: 28px;
+}
+
+.breeder-summary span,
+.breeder-section h2 span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.breeder-section h2 {
+  font-size: 22px;
+  margin: 0 0 10px;
+}
+
+.breeder-grid,
+.replacement-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.breeder-card,
+.replacement-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+}
+
+.breeder-good {
+  border-left-color: var(--done);
+}
+
+.breeder-replace {
+  border-left-color: var(--overdue);
+}
+
+.breeder-too-young {
+  border-left-color: var(--upcoming);
+}
+
+.breeder-card-title {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.breeder-card p,
+.replacement-card p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.breeder-status {
+  border-radius: 999px;
+  color: white;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 900;
+  justify-self: start;
+  padding: 6px 9px;
+}
+
+.breeder-good .breeder-status {
+  background: var(--done);
+}
+
+.breeder-replace .breeder-status {
+  background: var(--overdue);
+}
+
+.breeder-too-young .breeder-status {
+  background: var(--upcoming);
+}
+
+.breeder-card small,
+.replacement-card small {
+  color: #3f4a43;
+}
+
 .calendar-grid {
   display: grid;
   gap: 1px;
@@ -521,6 +623,12 @@ tbody tr:hover {
   }
 
   .today-view {
+    grid-template-columns: 1fr;
+  }
+
+  .breeder-summary,
+  .breeder-grid,
+  .replacement-grid {
     grid-template-columns: 1fr;
   }
 
