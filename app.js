@@ -245,6 +245,22 @@ function extractCount(cells) {
   return match ? match[0] : "";
 }
 
+function isLitterMarker(value) {
+  return /^(pups?|tagged\?|\d+\s*[MF]|\d+\s*M\s*\+\s*\d+\s*F|\d+\s*F\s*\+\s*\d+\s*M|\d+M\d+F|~\d+[MF])$/i.test(String(value || "").trim());
+}
+
+function litterFromCells(cells) {
+  if (isLikelyAnimalRow(cells)) return null;
+  const markerIndex = cells.findIndex(isLitterMarker);
+  const dob = markerIndex >= 0 ? firstDateAfter(cells, markerIndex) : "";
+  if (!dob) return null;
+  return {
+    dob,
+    label: cells[markerIndex],
+    count: extractCount(cells)
+  };
+}
+
 function isCageNumber(value) {
   return /^\??\d{5,6}\??$/.test(String(value || "").trim());
 }
@@ -383,19 +399,14 @@ function parseSheetRows(sheetName, tableRows) {
       if (animal) cageAnimals.push(animal);
     }
 
-    const pupIndex = cells.findIndex((cell) => /^(pups?|tagged\?)$/i.test(String(cell || "").trim()));
-    const dob = pupIndex >= 0 ? firstDateAfter(cells, pupIndex) : "";
-    if (currentCage && pupIndex >= 0 && dob) {
+    const litter = litterFromCells(cells);
+    if (currentCage && litter) {
       rows.push({
         line: sheetName,
         cage: currentCage,
         row: rowNumber,
         dam: currentDam,
-        litter: {
-          dob,
-          label: cells[pupIndex],
-          count: extractCount(cells)
-        },
+        litter,
         notes: joined
       });
     }
