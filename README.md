@@ -17,7 +17,7 @@ Static GitHub Pages app for turning a Google Sheets mouse colony workbook into a
 - Breeders view: shows breeding-section cages as Good or Replace by age, plus replacement options grouped by target line and explicit sex/genotype criteria. Replacement options do not filter for inbreeding yet.
 - Replacement option groups are collapsed by default.
 
-The app reads the live Google Sheet directly in the browser through Google's visualization endpoint. The spreadsheet itself is not modified.
+The app reads the live Google Sheet directly in the browser through Google's visualization endpoint. Task generation is read-only.
 
 ## Live Google Sheet bridge
 
@@ -30,13 +30,15 @@ The primary bridge is already built into `app.js`:
 
 The workbook must remain accessible to the team account/browser opening the page. If Google blocks the live read, the app falls back to `sample-data.js` and says `sample fallback` in the upper right.
 
-The `apps-script/Code.gs` file is an alternate bridge option if a stricter/private deployment is needed:
+The `apps-script/Code.gs` file is the shared write bridge for Old-tab SAC/Keep decisions. It writes decisions back to a same-row column named `SAC/Keep Notes` on the existing line tabs, so the whole team can see the same assignments.
 
 1. Open the Google Sheet.
 2. Go to Extensions > Apps Script.
 3. Paste `apps-script/Code.gs`.
-4. Deploy as a Web App.
-5. Replace `loadRows()` in `app.js` with a fetch to the Web App URL.
+4. Deploy as a Web App with access appropriate for the team.
+5. Put the Web App URL into `CONFIG.oldMouseBridgeUrl` in `app.js`.
+
+If `CONFIG.oldMouseBridgeUrl` is blank, the Old tab still works locally but SAC/Keep decisions are stored only in that browser.
 
 ## GitHub Pages
 

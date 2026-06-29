@@ -14,7 +14,8 @@ const CONFIG = {
   ],
   autoRefreshMs: 5 * 60 * 1000,
   localStorageKey: "colony-task-status-v1",
-  oldMouseStorageKey: "colony-old-mouse-status-v1"
+  oldMouseStorageKey: "colony-old-mouse-status-v1",
+  oldMouseBridgeUrl: ""
 };
 
 const CURRENT_BREEDER_CAGES = {
@@ -189,6 +190,10 @@ function loadOldMouseState() {
 
 function saveOldMouseState() {
   localStorage.setItem(CONFIG.oldMouseStorageKey, JSON.stringify(oldMouseState));
+}
+
+function bridgeEnabled() {
+  return Boolean(CONFIG.oldMouseBridgeUrl);
 }
 
 function taskId(parts) {
@@ -673,6 +678,55 @@ function loadGoogleSheet(sheetName) {
     script.src = `https://docs.google.com/spreadsheets/d/${CONFIG.spreadsheetId}/gviz/tq?${params.toString()}`;
     document.head.append(script);
   });
+}
+
+function loadOldMouseBridgeState() {
+  if (!bridgeEnabled()) return Promise.resolve(oldMouseState);
+
+  return new Promise((resolve, reject) => {
+    const callbackName = `oldMouseState_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement("script");
+    const params = new URLSearchParams({
+      action: "oldState",
+      callback: callbackName
+    });
+
+    window[callbackName] = (state) => {
+      delete window[callbackName];
+      script.remove();
+      resolve(state || {});
+    };
+
+    script.onerror = () => {
+      delete window[callbackName];
+      script.remove();
+      reject(new Error("Could not load shared old mouse notes."));
+    };
+
+    script.src = `${CONFIG.oldMouseBridgeUrl}?${params.toString()}`;
+    document.head.append(script);
+  });
+}
+
+function saveOldMouseBridgeState(mouse, state) {
+  if (!bridgeEnabled()) return Promise.resolve();
+  const body = new URLSearchParams({
+    action: "saveOldMouse",
+    id: mouse.id,
+    line: mouse.line,
+    cage: mouse.cage,
+    row: String(mouse.row),
+    tag: mouse.tag || "",
+    sex: mouse.sex || "",
+    status: state?.status || "",
+    keepDate: state?.keepDate || "",
+    note: state?.note || ""
+  });
+  return fetch(CONFIG.oldMouseBridgeUrl, {
+    method: "POST",
+    mode: "no-cors",
+    body
+  }).catch((error) => console.error(error));
 }
 
 async function loadRows() {
@@ -1225,15 +1279,15 @@ function oldMouseCard(mouse) {
   const sacButton = document.createElement("button");
   sacButton.type = "button";
   sacButton.textContent = "SAC";
-  sacButton.addEventListener("click", () => updateOldMouse(mouse.id, { status: "SAC", keepDate: "", note: state.note || "" }));
+  sacButton.addEventListener("click", () => updateOldMouse(mouse, { status: "SAC", keepDate: "", note: state.note || "" }));
   const keepButton = document.createElement("button");
   keepButton.type = "button";
   keepButton.textContent = "Keep";
-  keepButton.addEventListener("click", () => updateOldMouse(mouse.id, { status: "KEEP", keepDate: state.keepDate || CONFIG.today, note: state.note || "" }));
+  keepButton.addEventListener("click", () => updateOldMouse(mouse, { status: "KEEP", keepDate: state.keepDate || CONFIG.today, note: state.note || "" }));
   const clearButton = document.createElement("button");
   clearButton.type = "button";
   clearButton.textContent = "Clear";
-  clearButton.addEventListener("click", () => updateOldMouse(mouse.id, null));
+  clearButton.addEventListener("click", () => updateOldMouse(mouse, null));
   controls.append(sacButton, keepButton, clearButton);
 
   const keepFields = document.createElement("div");
@@ -1241,12 +1295,12 @@ function oldMouseCard(mouse) {
   const keepDate = document.createElement("input");
   keepDate.type = "date";
   keepDate.value = state.keepDate || "";
-  keepDate.addEventListener("change", () => updateOldMouse(mouse.id, { ...oldMouseState[mouse.id], status: "KEEP", keepDate: keepDate.value }));
+  keepDate.addEventListener("change", () => updateOldMouse(mouse, { ...oldMouseState[mouse.id], status: "KEEP", keepDate: keepDate.value }));
   const note = document.createElement("input");
   note.type = "text";
   note.placeholder = "Keep note";
   note.value = state.note || "";
-  note.addEventListener("change", () => updateOldMouse(mouse.id, { ...oldMouseState[mouse.id], note: note.value }));
+  note.addEventListener("change", () => updateOldMouse(mouse, { ...oldMouseState[mouse.id], note: note.value }));
   keepFields.append(keepDate, note);
 
   const detail = document.createElement("small");
@@ -1255,13 +1309,15 @@ function oldMouseCard(mouse) {
   return card;
 }
 
-function updateOldMouse(id, state) {
+function updateOldMouse(mouse, state) {
+  const id = mouse.id;
   if (state) {
     oldMouseState[id] = state;
   } else {
     delete oldMouseState[id];
   }
   saveOldMouseState();
+  saveOldMouseBridgeState(mouse, state);
   render();
 }
 
@@ -1303,6 +1359,11 @@ async function refresh() {
     const rows = await loadRows();
     sourceRows = rows;
     taskCache = buildTasks(rows);
+    oldMouseState = await loadOldMouseBridgeState().catch((error) => {
+      console.error(error);
+      return oldMouseState;
+    });
+    saveOldMouseState();
     populateLineFilter([...taskCache, ...buildOldMice(rows)]);
     render();
     const source = els.lastUpdated.dataset.source === "fallback" ? "sample fallback" : "live Google Sheet";
