@@ -15,7 +15,7 @@ const CONFIG = {
   autoRefreshMs: 5 * 60 * 1000,
   localStorageKey: "colony-task-status-v1",
   oldMouseStorageKey: "colony-old-mouse-status-v1",
-  oldMouseBridgeUrl: ""
+  oldMouseBridgeUrl: "https://script.google.com/macros/s/AKfycbwUsmZ4HAil6QepgqNi373iiKihg0zqip1LPWZlzb4LISn4ssKLhlRiNofU4OuDdXk/exec"
 };
 
 const CURRENT_BREEDER_CAGES = {
