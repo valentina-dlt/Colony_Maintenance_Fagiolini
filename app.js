@@ -15,7 +15,7 @@ const CONFIG = {
   autoRefreshMs: 5 * 60 * 1000,
   localStorageKey: "colony-task-status-v1",
   oldMouseStorageKey: "colony-old-mouse-status-v1",
-  oldMouseBridgeUrl: "https://script.google.com/a/macros/enders.tch.harvard.edu/s/AKfycbxRkyNZ4jWdP0NzdddZdgleRoCQjKY8eD0pdEY2Q0rGJMoTK0exIFgycwH8ZcCZsn_2/exec"
+  oldMouseBridgeUrl: "https://script.google.com/a/macros/enders.tch.harvard.edu/s/AKfycbyFBhHJhQ_evC6ZuBdYinSm_bm-fNC6W5awuam913q2XkyPJsiV72WlKwyRb-9KbT4L/exec"
 };
 
 const CURRENT_BREEDER_CAGES = {
