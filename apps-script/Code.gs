@@ -14,8 +14,8 @@ const ACTIVE_SHEETS = [
 
 function doGet(e) {
   const params = e?.parameter || {};
-  const action = params.action || "oldState";
-  const payload = action === "oldState" ? buildOldMouseState_() : { error: "Unknown action" };
+  const requestAction = params.action || "oldState";
+  const payload = requestAction === "oldState" ? buildOldMouseState_() : { error: "Unknown action" };
   const output = JSON.stringify(payload);
   const callback = params.callback;
   return ContentService
