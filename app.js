@@ -48,6 +48,7 @@ const els = {
   breedersView: document.querySelector("#breedersView"),
   oldView: document.querySelector("#oldView"),
   sheetsBridgeView: document.querySelector("#sheetsBridgeView"),
+  summaryGrid: document.querySelector("#summaryGrid"),
   calendarHeader: document.querySelector("#calendarHeader"),
   calendarKicker: document.querySelector("#calendarKicker"),
   calendarTitle: document.querySelector("#calendarTitle"),
@@ -1416,7 +1417,9 @@ function setCalendarMode(mode) {
 function render() {
   updateSummary(taskCache);
   const tasks = activeView === "all" ? filteredTasks() : visibleTasks();
+  const taskSummaryViews = ["all", "today", "week", "month"];
 
+  els.summaryGrid.classList.toggle("hidden", !taskSummaryViews.includes(activeView));
   els.tableView.classList.toggle("hidden", activeView !== "all");
   els.todayView.classList.toggle("hidden", activeView !== "today");
   els.calendarView.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
