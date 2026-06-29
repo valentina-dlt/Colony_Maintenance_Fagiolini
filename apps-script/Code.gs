@@ -65,7 +65,12 @@ function saveOldMouse_(params) {
   const sheet = ss.getSheetByName(params.line);
   if (!sheet) throw new Error(`Sheet not found: ${params.line}`);
   const row = Number(params.row);
-  if (!row) throw new Error("Missing row");
+  if (!Number.isInteger(row) || row < 2) throw new Error(`Unsafe row: ${params.row}`);
+  const values = sheet.getRange(row, 1, 1, sheet.getMaxColumns()).getDisplayValues()[0];
+  const animal = parseAnimalRow_(values, row, params.line);
+  if (!animal || animal.id !== params.id) {
+    throw new Error(`Animal row mismatch. Expected ${params.id}, found ${animal?.id || "none"}`);
+  }
   const noteColumn = ensureSacKeepColumn_(sheet);
   sheet.getRange(row, noteColumn).setValue(formatSacKeepNote_(params));
 }
@@ -84,7 +89,7 @@ function ensureSacKeepColumn_(sheet) {
   const existing = findSacKeepColumn_(sheet);
   if (existing) return existing;
   const column = sheet.getLastColumn() + 1;
-  sheet.getRange(2, column).setValue(SAC_KEEP_HEADER);
+  sheet.getRange(1, column).setValue(SAC_KEEP_HEADER);
   return column;
 }
 

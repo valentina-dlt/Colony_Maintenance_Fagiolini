@@ -723,6 +723,9 @@ function bridgeJsonp(params, callbackPrefix) {
 
 function saveOldMouseBridgeState(mouse, state) {
   if (!bridgeEnabled()) return Promise.resolve();
+  if (!Number.isInteger(Number(mouse.row)) || Number(mouse.row) < 2) {
+    return Promise.reject(new Error(`Unsafe old mouse row: ${mouse.row || "missing"}`));
+  }
   const params = new URLSearchParams({
     action: "saveOldMouse",
     id: mouse.id,
