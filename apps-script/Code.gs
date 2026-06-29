@@ -13,17 +13,18 @@ const ACTIVE_SHEETS = [
 ];
 
 function doGet(e) {
-  const action = e.parameter.action || "oldState";
+  const params = e?.parameter || {};
+  const action = params.action || "oldState";
   const payload = action === "oldState" ? buildOldMouseState_() : { error: "Unknown action" };
   const output = JSON.stringify(payload);
-  const callback = e.parameter.callback;
+  const callback = params.callback;
   return ContentService
     .createTextOutput(callback ? `${callback}(${output});` : output)
     .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
-  const params = e.parameter || {};
+  const params = e?.parameter || {};
   if (params.action === "saveOldMouse") saveOldMouse_(params);
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))

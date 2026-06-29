@@ -16,6 +16,7 @@ Static GitHub Pages app for turning a Google Sheets mouse colony workbook into a
 - Pup ASO injection and Plasma/Tissue Collection tasks move to review after their work window instead of becoming overdue.
 - Breeders view: shows breeding-section cages as Good or Replace by age, plus replacement options grouped by target line and explicit sex/genotype criteria. Replacement options do not filter for inbreeding yet.
 - Replacement option groups are collapsed by default.
+- Sheets Bridge view: checked-off tasks queue until a user confirms the live Google Sheet has been updated.
 
 The app reads the live Google Sheet directly in the browser through Google's visualization endpoint. Task generation is read-only.
 

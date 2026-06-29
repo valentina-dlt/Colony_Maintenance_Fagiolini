@@ -47,6 +47,7 @@ const els = {
   calendarView: document.querySelector("#calendarView"),
   breedersView: document.querySelector("#breedersView"),
   oldView: document.querySelector("#oldView"),
+  sheetsBridgeView: document.querySelector("#sheetsBridgeView"),
   calendarHeader: document.querySelector("#calendarHeader"),
   calendarKicker: document.querySelector("#calendarKicker"),
   calendarTitle: document.querySelector("#calendarTitle"),
@@ -817,9 +818,12 @@ function makeDoneToggle(task) {
   done.setAttribute("aria-label", `Mark ${task.task} for cage ${task.cage} done`);
   done.checked = Boolean(completionState[task.id]?.done);
   done.addEventListener("change", () => {
+    const previous = completionState[task.id] || {};
     completionState[task.id] = {
       done: done.checked,
-      completedAt: done.checked ? new Date().toISOString() : ""
+      completedAt: done.checked ? previous.completedAt || new Date().toISOString() : "",
+      sheetConfirmed: done.checked ? Boolean(previous.sheetConfirmed) : false,
+      sheetConfirmedAt: done.checked ? previous.sheetConfirmedAt || "" : ""
     };
     saveCompletionState();
     taskCache = taskCache.map((item) => item.id === task.id ? { ...item, state: classifyTask(item) } : item);
@@ -1321,6 +1325,82 @@ function updateOldMouse(mouse, state) {
   render();
 }
 
+function bridgeTasks() {
+  return sortTasks(visibleTasks().filter((task) => completionState[task.id]?.done));
+}
+
+function renderSheetsBridge() {
+  const tasks = bridgeTasks();
+  const needsUpdate = tasks.filter((task) => !completionState[task.id]?.sheetConfirmed);
+  const confirmed = tasks.filter((task) => completionState[task.id]?.sheetConfirmed);
+  els.sheetsBridgeView.innerHTML = "";
+
+  const summary = document.createElement("section");
+  summary.className = "breeder-summary";
+  summary.innerHTML = `
+    <div><strong>${tasks.length}</strong><span>Checked off</span></div>
+    <div><strong>${needsUpdate.length}</strong><span>Needs Sheet update</span></div>
+    <div><strong>${confirmed.length}</strong><span>Confirmed</span></div>
+  `;
+  els.sheetsBridgeView.append(
+    summary,
+    bridgeTaskSection("Needs Sheet Update", needsUpdate, false),
+    bridgeTaskSection("Confirmed In Sheet", confirmed, true)
+  );
+}
+
+function bridgeTaskSection(title, tasks, confirmed) {
+  const section = document.createElement("section");
+  section.className = "breeder-section";
+  const heading = document.createElement("h2");
+  heading.textContent = `${title} (${tasks.length})`;
+  const grid = document.createElement("div");
+  grid.className = "bridge-task-grid";
+  if (tasks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "calendar-empty";
+    empty.textContent = confirmed ? "No confirmed spreadsheet updates yet." : "No checked-off tasks are waiting for spreadsheet confirmation.";
+    grid.append(empty);
+  } else {
+    tasks.forEach((task) => grid.append(bridgeTaskCard(task)));
+  }
+  section.append(heading, grid);
+  return section;
+}
+
+function bridgeTaskCard(task) {
+  const state = completionState[task.id] || {};
+  const card = document.createElement("article");
+  card.className = `bridge-task-card ${state.sheetConfirmed ? "bridge-confirmed" : "bridge-pending"} ${taskCategoryClass(task)}`;
+
+  const title = document.createElement("div");
+  title.className = "breeder-card-title";
+  title.textContent = `${task.task} | Cage ${task.cage}`;
+  const meta = document.createElement("p");
+  meta.textContent = `${task.line} | ${formatAge(task.age) || "P?"} | checked ${state.completedAt ? formatDate(state.completedAt.slice(0, 10)) : "today"}`;
+  const detail = document.createElement("small");
+  detail.textContent = task.details || "";
+  const action = document.createElement("button");
+  action.type = "button";
+  action.textContent = state.sheetConfirmed ? "Needs Sheet Update" : "Confirmed in Sheet";
+  action.addEventListener("click", () => setSheetConfirmed(task.id, !state.sheetConfirmed));
+  card.append(title, meta, detail, action);
+  return card;
+}
+
+function setSheetConfirmed(taskIdValue, confirmed) {
+  const previous = completionState[taskIdValue] || {};
+  completionState[taskIdValue] = {
+    ...previous,
+    done: true,
+    completedAt: previous.completedAt || new Date().toISOString(),
+    sheetConfirmed: confirmed,
+    sheetConfirmedAt: confirmed ? new Date().toISOString() : ""
+  };
+  saveCompletionState();
+  render();
+}
+
 function setActiveView(view) {
   activeView = view;
   els.viewTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
@@ -1342,6 +1422,7 @@ function render() {
   els.calendarView.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
   els.breedersView.classList.toggle("hidden", activeView !== "breeders");
   els.oldView.classList.toggle("hidden", activeView !== "old");
+  els.sheetsBridgeView.classList.toggle("hidden", activeView !== "sheetsBridge");
   els.calendarHeader.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
   els.statusFilter.disabled = activeView !== "all";
 
@@ -1350,6 +1431,7 @@ function render() {
   if (activeView === "week" || activeView === "month") renderCalendar(tasks, activeView);
   if (activeView === "breeders") renderBreeders(sourceRows);
   if (activeView === "old") renderOld(sourceRows);
+  if (activeView === "sheetsBridge") renderSheetsBridge();
 }
 
 async function refresh() {

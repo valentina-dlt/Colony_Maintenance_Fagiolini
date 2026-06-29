@@ -304,7 +304,8 @@ tr.task-category-experimental:hover {
 
 .breeder-grid,
 .replacement-grid,
-.old-mouse-grid {
+.old-mouse-grid,
+.bridge-task-grid {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -327,7 +328,8 @@ tr.task-category-experimental:hover {
 
 .breeder-card,
 .replacement-card,
-.old-mouse-card {
+.old-mouse-card,
+.bridge-task-card {
   background: white;
   border: 1px solid var(--line);
   border-left: 5px solid var(--line);
@@ -357,6 +359,14 @@ tr.task-category-experimental:hover {
   border-left-color: var(--done);
 }
 
+.bridge-pending {
+  border-left-color: var(--review);
+}
+
+.bridge-confirmed {
+  border-left-color: var(--done);
+}
+
 .old-mouse-review .breeder-status {
   background: var(--review);
 }
@@ -376,7 +386,8 @@ tr.task-category-experimental:hover {
 
 .breeder-card p,
 .replacement-card p,
-.old-mouse-card p {
+.old-mouse-card p,
+.bridge-task-card p {
   color: var(--muted);
   margin: 0;
 }
@@ -401,8 +412,15 @@ tr.task-category-experimental:hover {
 
 .breeder-card small,
 .replacement-card small,
-.old-mouse-card small {
+.old-mouse-card small,
+.bridge-task-card small {
   color: #3f4a43;
+}
+
+.bridge-task-card button {
+  justify-self: start;
+  min-height: 34px;
+  padding: 0 12px;
 }
 
 .old-mouse-actions,
@@ -708,7 +726,8 @@ tbody tr:hover {
   .breeder-summary,
   .breeder-grid,
   .replacement-grid,
-  .old-mouse-grid {
+  .old-mouse-grid,
+  .bridge-task-grid {
     grid-template-columns: 1fr;
   }
 
