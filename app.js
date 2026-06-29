@@ -38,6 +38,7 @@ const els = {
   lineFilter: document.querySelector("#lineFilter"),
   sortSelect: document.querySelector("#sortSelect"),
   searchInput: document.querySelector("#searchInput"),
+  toolbar: document.querySelector(".toolbar"),
   refreshButton: document.querySelector("#refreshButton"),
   lastUpdated: document.querySelector("#lastUpdated"),
   refreshSchedule: document.querySelector("#refreshSchedule"),
@@ -48,6 +49,7 @@ const els = {
   breedersView: document.querySelector("#breedersView"),
   oldView: document.querySelector("#oldView"),
   sheetsBridgeView: document.querySelector("#sheetsBridgeView"),
+  instructionsView: document.querySelector("#instructionsView"),
   summaryGrid: document.querySelector("#summaryGrid"),
   calendarHeader: document.querySelector("#calendarHeader"),
   calendarKicker: document.querySelector("#calendarKicker"),
@@ -1431,14 +1433,17 @@ function render() {
   updateSummary(taskCache);
   const tasks = activeView === "all" ? filteredTasks() : visibleTasks();
   const taskSummaryViews = ["all", "today", "week", "month"];
+  const toolbarViews = ["all", "today", "week", "month", "breeders", "old", "sheetsBridge"];
 
   els.summaryGrid.classList.toggle("hidden", !taskSummaryViews.includes(activeView));
+  els.toolbar.classList.toggle("hidden", !toolbarViews.includes(activeView));
   els.tableView.classList.toggle("hidden", activeView !== "all");
   els.todayView.classList.toggle("hidden", activeView !== "today");
   els.calendarView.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
   els.breedersView.classList.toggle("hidden", activeView !== "breeders");
   els.oldView.classList.toggle("hidden", activeView !== "old");
   els.sheetsBridgeView.classList.toggle("hidden", activeView !== "sheetsBridge");
+  els.instructionsView.classList.toggle("hidden", activeView !== "instructions");
   els.calendarHeader.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
   els.statusFilter.disabled = activeView !== "all";
 

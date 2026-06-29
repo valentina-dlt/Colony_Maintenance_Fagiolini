@@ -20,14 +20,21 @@
     </header>
 
     <main>
-      <nav class="view-tabs" aria-label="Task views">
-        <button class="view-tab active" type="button" data-view="all">All Tasks</button>
-        <button class="view-tab" type="button" data-view="today">Today</button>
-        <button class="view-tab" type="button" data-view="week">Week</button>
-        <button class="view-tab" type="button" data-view="month">Month</button>
-        <button class="view-tab" type="button" data-view="breeders">Breeders</button>
-        <button class="view-tab" type="button" data-view="old">Old</button>
-        <button class="view-tab" type="button" data-view="sheetsBridge">Sheets Bridge</button>
+      <nav class="view-tabs" aria-label="App views">
+        <div class="view-group" aria-label="Tasks">
+          <span>Tasks</span>
+          <button class="view-tab active" type="button" data-view="all">All</button>
+          <button class="view-tab" type="button" data-view="today">Today</button>
+          <button class="view-tab" type="button" data-view="week">Week</button>
+          <button class="view-tab" type="button" data-view="month">Month</button>
+        </div>
+        <div class="view-group" aria-label="Colony tools">
+          <span>Tools</span>
+          <button class="view-tab" type="button" data-view="breeders">Breeders</button>
+          <button class="view-tab" type="button" data-view="old">Old</button>
+          <button class="view-tab" type="button" data-view="sheetsBridge">Sheets Bridge</button>
+          <button class="view-tab" type="button" data-view="instructions">Instructions</button>
+        </div>
       </nav>
 
       <section id="summaryGrid" class="summary-grid" aria-label="Task summary">
@@ -128,6 +135,29 @@
 
       <section id="sheetsBridgeView" class="sheets-bridge-view hidden" aria-label="Sheets bridge"></section>
 
+      <section id="instructionsView" class="instructions-view hidden" aria-label="Instructions">
+        <section>
+          <h2>What Comes From The Spreadsheet</h2>
+          <p>The app reads the live Google Sheet on refresh and every five minutes while the page is open. Genetic line tabs, cage numbers, DOB, age, sex, genotype, notes, breeding sections, and experimental notes are interpreted from the spreadsheet. The app excludes CLS 13.</p>
+          <p>Task windows are calculated from spreadsheet DOB and line information: ear tagging, weaning, wean-info review, adult missing tags, FS pup injections, and plasma/tissue collection.</p>
+        </section>
+        <section>
+          <h2>What Is Saved In This Browser</h2>
+          <p>Checked task boxes, Sheets Bridge confirmations, and Old tab SAC/Keep choices are stored only in the current browser's local storage. They are not shared across users, computers, browsers, private windows, or cleared browser profiles.</p>
+          <p>Refreshing the page keeps browser-local choices. Opening the app in another browser or after clearing site data will not show those choices.</p>
+        </section>
+        <section>
+          <h2>Actions That Record Or Erase Local Data</h2>
+          <p>Checking a task marks it done locally and adds it to Sheets Bridge locally. Unchecking that task removes the local done state and its Sheets Bridge confirmation state.</p>
+          <p>In Sheets Bridge, confirming a task only records that confirmation locally. It does not edit the Google Sheet.</p>
+          <p>In Old, choosing SAC or Keep records that choice locally. Clear removes the local choice. A Keep date in the past returns the mouse to review.</p>
+        </section>
+        <section>
+          <h2>What Does Not Write To The Sheet</h2>
+          <p>The webpage currently does not write any data back to Google Sheets. The old Apps Script write bridge is disabled after unsafe writes were observed. Spreadsheet updates must be made directly in the Google Sheet.</p>
+        </section>
+      </section>
+
       <section id="tableView" class="task-table-wrap">
         <table>
           <thead>
@@ -160,7 +190,7 @@
       </tr>
     </template>
 
-    <script src="sample-data.js?v=20260629-13"></script>
-    <script src="app.js?v=20260629-13"></script>
+    <script src="sample-data.js?v=20260629-14"></script>
+    <script src="app.js?v=20260629-14"></script>
   </body>
 </html>

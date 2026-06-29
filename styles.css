@@ -76,9 +76,31 @@ main {
 
 .view-tabs {
   display: flex;
-  gap: 8px;
+  gap: 14px;
   margin-bottom: 18px;
   overflow-x: auto;
+}
+
+.view-group {
+  align-items: center;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding-right: 14px;
+}
+
+.view-group:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+.view-group span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .view-tab {
@@ -132,6 +154,37 @@ main {
   display: grid;
   gap: 10px;
   justify-items: end;
+}
+
+.instructions-view {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.instructions-view section {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.instructions-view section:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.instructions-view h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.instructions-view p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 8px 0 0;
+  max-width: 920px;
 }
 
 .calendar-mode {
