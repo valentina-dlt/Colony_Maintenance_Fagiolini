@@ -34,6 +34,7 @@ const els = {
   statusFilter: document.querySelector("#statusFilter"),
   taskFilter: document.querySelector("#taskFilter"),
   lineFilter: document.querySelector("#lineFilter"),
+  sortSelect: document.querySelector("#sortSelect"),
   searchInput: document.querySelector("#searchInput"),
   refreshButton: document.querySelector("#refreshButton"),
   lastUpdated: document.querySelector("#lastUpdated"),
@@ -707,10 +708,23 @@ function visibleTasks() {
 function filteredTasks() {
   const status = els.statusFilter.value;
 
-  return visibleTasks().filter((task) => {
+  const tasks = visibleTasks().filter((task) => {
     if (status === "open" && task.state === "done") return false;
     if (status !== "open" && status !== "all" && task.state !== status) return false;
     return true;
+  });
+  return sortTasks(tasks);
+}
+
+function sortTasks(tasks) {
+  const sortMode = els.sortSelect.value;
+  const direction = sortMode.endsWith("desc") ? -1 : 1;
+  const field = sortMode.startsWith("dob") ? "dob" : "dueEnd";
+
+  return [...tasks].sort((a, b) => {
+    const aValue = a[field] || "";
+    const bValue = b[field] || "";
+    return direction * (aValue.localeCompare(bValue) || a.cage.localeCompare(b.cage) || a.task.localeCompare(b.task));
   });
 }
 

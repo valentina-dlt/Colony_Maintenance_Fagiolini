@@ -546,7 +546,7 @@ tr.task-category-experimental:hover {
   align-items: end;
   display: grid;
   gap: 12px;
-  grid-template-columns: 160px 190px 220px minmax(220px, 1fr);
+  grid-template-columns: minmax(130px, 0.8fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(150px, 0.9fr) minmax(220px, 1.35fr);
   margin-bottom: 14px;
 }
 
@@ -678,6 +678,10 @@ tbody tr:hover {
 
   .search-box {
     grid-column: 1 / -1;
+  }
+
+  .sort-box {
+    grid-column: span 1;
   }
 }
 
