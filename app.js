@@ -13,7 +13,8 @@ const CONFIG = {
     "CDKL5 FL x Fox J1 Cre"
   ],
   autoRefreshMs: 5 * 60 * 1000,
-  localStorageKey: "colony-task-status-v1"
+  localStorageKey: "colony-task-status-v1",
+  oldMouseStorageKey: "colony-old-mouse-status-v1"
 };
 
 const CURRENT_BREEDER_CAGES = {
@@ -44,6 +45,7 @@ const els = {
   todayView: document.querySelector("#todayView"),
   calendarView: document.querySelector("#calendarView"),
   breedersView: document.querySelector("#breedersView"),
+  oldView: document.querySelector("#oldView"),
   calendarHeader: document.querySelector("#calendarHeader"),
   calendarKicker: document.querySelector("#calendarKicker"),
   calendarTitle: document.querySelector("#calendarTitle"),
@@ -57,6 +59,7 @@ const els = {
 let taskCache = [];
 let sourceRows = [];
 let completionState = loadCompletionState();
+let oldMouseState = loadOldMouseState();
 let activeView = "all";
 let calendarMode = "window";
 
@@ -174,6 +177,18 @@ function loadCompletionState() {
 
 function saveCompletionState() {
   localStorage.setItem(CONFIG.localStorageKey, JSON.stringify(completionState));
+}
+
+function loadOldMouseState() {
+  try {
+    return JSON.parse(localStorage.getItem(CONFIG.oldMouseStorageKey)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveOldMouseState() {
+  localStorage.setItem(CONFIG.oldMouseStorageKey, JSON.stringify(oldMouseState));
 }
 
 function taskId(parts) {
@@ -719,13 +734,26 @@ function filteredTasks() {
 function sortTasks(tasks) {
   const sortMode = els.sortSelect.value;
   const direction = sortMode.endsWith("desc") ? -1 : 1;
-  const field = sortMode.startsWith("dob") ? "dob" : "dueEnd";
+  const field = sortMode.startsWith("dob") ? "dob" : sortMode.startsWith("age") ? "age" : sortMode.startsWith("line") ? "line" : "dueEnd";
 
   return [...tasks].sort((a, b) => {
-    const aValue = a[field] || "";
-    const bValue = b[field] || "";
-    return direction * (aValue.localeCompare(bValue) || a.cage.localeCompare(b.cage) || a.task.localeCompare(b.task));
+    const aValue = sortValue(a, field);
+    const bValue = sortValue(b, field);
+    return direction * (compareSortValues(aValue, bValue) || a.cage.localeCompare(b.cage) || a.task.localeCompare(b.task));
   });
+}
+
+function sortValue(item, field) {
+  if (field === "age") {
+    if (Array.isArray(item.age)) return Math.max(...item.age.filter((age) => Number.isFinite(age)), -1);
+    return Number.isFinite(item.age) ? item.age : -1;
+  }
+  return item[field] || "";
+}
+
+function compareSortValues(aValue, bValue) {
+  if (typeof aValue === "number" || typeof bValue === "number") return aValue - bValue;
+  return String(aValue).localeCompare(String(bValue));
 }
 
 function makeDoneToggle(task) {
@@ -1103,6 +1131,140 @@ function replacementGroups(options) {
   return wrap;
 }
 
+function oldMouseId(mouse) {
+  return [mouse.line, mouse.cage, mouse.row, mouse.tag || "unmarked", mouse.sex || "?"].join("|");
+}
+
+function buildOldMice(rows) {
+  return rows
+    .filter((row) => row.type === "cage")
+    .flatMap((cage) => cage.animals
+      .filter((animal) => Number.isFinite(animal.age) && animal.age > 220)
+      .map((animal) => {
+        const mouse = { ...animal, line: cage.line, cage: cage.cage };
+        mouse.id = oldMouseId(mouse);
+        mouse.oldState = oldMouseState[mouse.id] || {};
+        return mouse;
+      }));
+}
+
+function matchesOldFilters(mouse) {
+  const line = els.lineFilter.value;
+  const query = els.searchInput.value.trim().toLowerCase();
+  const haystack = [mouse.line, mouse.cage, mouse.tag, mouse.sex, mouse.genotype, mouse.notes, mouse.oldState.note].filter(Boolean).join(" ").toLowerCase();
+  if (line !== "all" && mouse.line !== line) return false;
+  return !query || haystack.includes(query);
+}
+
+function isOldMouseAssigned(mouse) {
+  const state = mouse.oldState;
+  if (state.status === "SAC") return true;
+  if (state.status === "KEEP" && state.keepDate && state.keepDate >= CONFIG.today) return true;
+  return false;
+}
+
+function sortOldMice(mice) {
+  const sortMode = els.sortSelect.value;
+  const direction = sortMode.endsWith("desc") ? -1 : 1;
+  const field = sortMode.startsWith("line") ? "line" : sortMode.startsWith("dob") ? "dob" : "age";
+  return [...mice].sort((a, b) => direction * (compareSortValues(sortValue(a, field), sortValue(b, field)) || a.cage.localeCompare(b.cage) || String(a.tag || "").localeCompare(String(b.tag || ""))));
+}
+
+function renderOld(rows) {
+  const mice = sortOldMice(buildOldMice(rows).filter(matchesOldFilters));
+  const needsReview = mice.filter((mouse) => !isOldMouseAssigned(mouse));
+  const assigned = mice.filter(isOldMouseAssigned);
+  els.oldView.innerHTML = "";
+
+  const summary = document.createElement("section");
+  summary.className = "breeder-summary";
+  summary.innerHTML = `
+    <div><strong>${mice.length}</strong><span>Over P220</span></div>
+    <div><strong>${needsReview.length}</strong><span>Needs review</span></div>
+    <div><strong>${assigned.length}</strong><span>Assigned</span></div>
+  `;
+  els.oldView.append(summary, oldMouseSection("Needs Review", needsReview), oldMouseSection("Assigned", assigned));
+}
+
+function oldMouseSection(title, mice) {
+  const section = document.createElement("section");
+  section.className = "breeder-section";
+  const heading = document.createElement("h2");
+  heading.textContent = `${title} (${mice.length})`;
+  const grid = document.createElement("div");
+  grid.className = "old-mouse-grid";
+  if (mice.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "calendar-empty";
+    empty.textContent = "No mice match this group.";
+    grid.append(empty);
+  } else {
+    mice.forEach((mouse) => grid.append(oldMouseCard(mouse)));
+  }
+  section.append(heading, grid);
+  return section;
+}
+
+function oldMouseCard(mouse) {
+  const state = mouse.oldState;
+  const displayStatus = state.status === "KEEP" && state.keepDate < CONFIG.today ? "Review" : state.status || "Unassigned";
+  const card = document.createElement("article");
+  card.className = `old-mouse-card old-mouse-${displayStatus.toLowerCase() === "unassigned" ? "review" : displayStatus.toLowerCase()}`;
+
+  const title = document.createElement("div");
+  title.className = "breeder-card-title";
+  title.textContent = `Cage ${mouse.cage} | ${mouse.tag || "unmarked"}`;
+  const meta = document.createElement("p");
+  meta.textContent = `${mouse.line} | ${mouse.sex || "?"} | ${formatAge(mouse.age)} | ${mouse.genotype || "genotype ?"}`;
+  const status = document.createElement("span");
+  status.className = "breeder-status";
+  status.textContent = displayStatus;
+
+  const controls = document.createElement("div");
+  controls.className = "old-mouse-actions";
+  const sacButton = document.createElement("button");
+  sacButton.type = "button";
+  sacButton.textContent = "SAC";
+  sacButton.addEventListener("click", () => updateOldMouse(mouse.id, { status: "SAC", keepDate: "", note: state.note || "" }));
+  const keepButton = document.createElement("button");
+  keepButton.type = "button";
+  keepButton.textContent = "Keep";
+  keepButton.addEventListener("click", () => updateOldMouse(mouse.id, { status: "KEEP", keepDate: state.keepDate || CONFIG.today, note: state.note || "" }));
+  const clearButton = document.createElement("button");
+  clearButton.type = "button";
+  clearButton.textContent = "Clear";
+  clearButton.addEventListener("click", () => updateOldMouse(mouse.id, null));
+  controls.append(sacButton, keepButton, clearButton);
+
+  const keepFields = document.createElement("div");
+  keepFields.className = "old-keep-fields";
+  const keepDate = document.createElement("input");
+  keepDate.type = "date";
+  keepDate.value = state.keepDate || "";
+  keepDate.addEventListener("change", () => updateOldMouse(mouse.id, { ...oldMouseState[mouse.id], status: "KEEP", keepDate: keepDate.value }));
+  const note = document.createElement("input");
+  note.type = "text";
+  note.placeholder = "Keep note";
+  note.value = state.note || "";
+  note.addEventListener("change", () => updateOldMouse(mouse.id, { ...oldMouseState[mouse.id], note: note.value }));
+  keepFields.append(keepDate, note);
+
+  const detail = document.createElement("small");
+  detail.textContent = mouse.experiment || mouse.notes || "";
+  card.append(title, meta, status, controls, keepFields, detail);
+  return card;
+}
+
+function updateOldMouse(id, state) {
+  if (state) {
+    oldMouseState[id] = state;
+  } else {
+    delete oldMouseState[id];
+  }
+  saveOldMouseState();
+  render();
+}
+
 function setActiveView(view) {
   activeView = view;
   els.viewTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
@@ -1123,6 +1285,7 @@ function render() {
   els.todayView.classList.toggle("hidden", activeView !== "today");
   els.calendarView.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
   els.breedersView.classList.toggle("hidden", activeView !== "breeders");
+  els.oldView.classList.toggle("hidden", activeView !== "old");
   els.calendarHeader.classList.toggle("hidden", activeView !== "week" && activeView !== "month");
   els.statusFilter.disabled = activeView !== "all";
 
@@ -1130,6 +1293,7 @@ function render() {
   if (activeView === "today") renderToday(tasks);
   if (activeView === "week" || activeView === "month") renderCalendar(tasks, activeView);
   if (activeView === "breeders") renderBreeders(sourceRows);
+  if (activeView === "old") renderOld(sourceRows);
 }
 
 async function refresh() {
@@ -1139,7 +1303,7 @@ async function refresh() {
     const rows = await loadRows();
     sourceRows = rows;
     taskCache = buildTasks(rows);
-    populateLineFilter(taskCache);
+    populateLineFilter([...taskCache, ...buildOldMice(rows)]);
     render();
     const source = els.lastUpdated.dataset.source === "fallback" ? "sample fallback" : "live Google Sheet";
     els.lastUpdated.textContent = `Updated from ${source} ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;

@@ -303,7 +303,8 @@ tr.task-category-experimental:hover {
 }
 
 .breeder-grid,
-.replacement-grid {
+.replacement-grid,
+.old-mouse-grid {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -325,7 +326,8 @@ tr.task-category-experimental:hover {
 }
 
 .breeder-card,
-.replacement-card {
+.replacement-card,
+.old-mouse-card {
   background: white;
   border: 1px solid var(--line);
   border-left: 5px solid var(--line);
@@ -343,13 +345,38 @@ tr.task-category-experimental:hover {
   border-left-color: var(--overdue);
 }
 
+.old-mouse-review {
+  border-left-color: var(--review);
+}
+
+.old-mouse-sac {
+  border-left-color: var(--overdue);
+}
+
+.old-mouse-keep {
+  border-left-color: var(--done);
+}
+
+.old-mouse-review .breeder-status {
+  background: var(--review);
+}
+
+.old-mouse-sac .breeder-status {
+  background: var(--overdue);
+}
+
+.old-mouse-keep .breeder-status {
+  background: var(--done);
+}
+
 .breeder-card-title {
   font-size: 18px;
   font-weight: 900;
 }
 
 .breeder-card p,
-.replacement-card p {
+.replacement-card p,
+.old-mouse-card p {
   color: var(--muted);
   margin: 0;
 }
@@ -373,8 +400,25 @@ tr.task-category-experimental:hover {
 }
 
 .breeder-card small,
-.replacement-card small {
+.replacement-card small,
+.old-mouse-card small {
   color: #3f4a43;
+}
+
+.old-mouse-actions,
+.old-keep-fields {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.old-keep-fields {
+  grid-template-columns: 145px minmax(0, 1fr);
+}
+
+.old-mouse-actions button {
+  min-height: 34px;
+  padding: 0 8px;
 }
 
 .replacement-programs {
@@ -663,7 +707,8 @@ tbody tr:hover {
 
   .breeder-summary,
   .breeder-grid,
-  .replacement-grid {
+  .replacement-grid,
+  .old-mouse-grid {
     grid-template-columns: 1fr;
   }
 

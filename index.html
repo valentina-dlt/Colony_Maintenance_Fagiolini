@@ -26,6 +26,7 @@
         <button class="view-tab" type="button" data-view="week">Week</button>
         <button class="view-tab" type="button" data-view="month">Month</button>
         <button class="view-tab" type="button" data-view="breeders">Breeders</button>
+        <button class="view-tab" type="button" data-view="old">Old</button>
       </nav>
 
       <section class="summary-grid" aria-label="Task summary">
@@ -85,6 +86,9 @@
             <option value="due-desc">Due date desc</option>
             <option value="dob-asc">DOB asc</option>
             <option value="dob-desc">DOB desc</option>
+            <option value="age-desc">Age desc</option>
+            <option value="age-asc">Age asc</option>
+            <option value="line-asc">Line asc</option>
           </select>
         </label>
         <label class="search-box">
@@ -119,6 +123,8 @@
 
       <section id="breedersView" class="breeders-view hidden" aria-label="Breeders"></section>
 
+      <section id="oldView" class="old-view hidden" aria-label="Old mice"></section>
+
       <section id="tableView" class="task-table-wrap">
         <table>
           <thead>
@@ -151,7 +157,7 @@
       </tr>
     </template>
 
-    <script src="sample-data.js?v=20260629-3"></script>
-    <script src="app.js?v=20260629-3"></script>
+    <script src="sample-data.js?v=20260629-4"></script>
+    <script src="app.js?v=20260629-4"></script>
   </body>
 </html>
