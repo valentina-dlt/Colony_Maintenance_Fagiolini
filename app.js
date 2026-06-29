@@ -1149,7 +1149,7 @@ async function refresh() {
   }
 }
 
-[els.statusFilter, els.taskFilter, els.lineFilter, els.searchInput].forEach((el) => {
+[els.statusFilter, els.taskFilter, els.lineFilter, els.sortSelect, els.searchInput].forEach((el) => {
   el.addEventListener("input", render);
 });
 els.viewTabs.forEach((tab) => {
