@@ -685,24 +685,35 @@ function loadGoogleSheet(sheetName) {
 function loadOldMouseBridgeState() {
   if (!bridgeEnabled()) return Promise.resolve(oldMouseState);
 
-  return new Promise((resolve, reject) => {
-    const callbackName = `oldMouseState_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement("script");
-    const params = new URLSearchParams({
-      action: "oldState",
-      callback: callbackName
-    });
+  const params = new URLSearchParams({ action: "oldState" });
+  return bridgeJsonp(params, "oldMouseState");
+}
 
-    window[callbackName] = (state) => {
+function bridgeJsonp(params, callbackPrefix) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `${callbackPrefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement("script");
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("The shared Sheets bridge did not respond."));
+    }, 10000);
+
+    function cleanup() {
       delete window[callbackName];
       script.remove();
-      resolve(state || {});
+      window.clearTimeout(timeout);
+    }
+
+    params.set("callback", callbackName);
+
+    window[callbackName] = (payload) => {
+      cleanup();
+      resolve(payload || {});
     };
 
     script.onerror = () => {
-      delete window[callbackName];
-      script.remove();
-      reject(new Error("Could not load shared old mouse notes."));
+      cleanup();
+      reject(new Error("Could not reach the shared Sheets bridge."));
     };
 
     script.src = `${CONFIG.oldMouseBridgeUrl}?${params.toString()}`;
@@ -712,7 +723,7 @@ function loadOldMouseBridgeState() {
 
 function saveOldMouseBridgeState(mouse, state) {
   if (!bridgeEnabled()) return Promise.resolve();
-  const body = new URLSearchParams({
+  const params = new URLSearchParams({
     action: "saveOldMouse",
     id: mouse.id,
     line: mouse.line,
@@ -724,11 +735,7 @@ function saveOldMouseBridgeState(mouse, state) {
     keepDate: state?.keepDate || "",
     note: state?.note || ""
   });
-  return fetch(CONFIG.oldMouseBridgeUrl, {
-    method: "POST",
-    mode: "no-cors",
-    body
-  }).catch((error) => console.error(error));
+  return bridgeJsonp(params, "oldMouseSave");
 }
 
 async function loadRows() {
@@ -1322,7 +1329,10 @@ function updateOldMouse(mouse, state) {
     delete oldMouseState[id];
   }
   saveOldMouseState();
-  saveOldMouseBridgeState(mouse, state);
+  saveOldMouseBridgeState(mouse, state).catch((error) => {
+    console.error(error);
+    els.lastUpdated.textContent = "Old mouse choice saved locally; Sheets bridge is not reachable.";
+  });
   render();
 }
 

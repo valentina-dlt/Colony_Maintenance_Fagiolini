@@ -15,7 +15,7 @@ const ACTIVE_SHEETS = [
 function doGet(e) {
   const params = e?.parameter || {};
   const requestAction = params.action || "oldState";
-  const responseBody = requestAction === "oldState" ? buildOldMouseState_() : { error: "Unknown action" };
+  const responseBody = handleRequest_(requestAction, params);
   const output = JSON.stringify(responseBody);
   const callback = params.callback;
   return ContentService
@@ -25,10 +25,19 @@ function doGet(e) {
 
 function doPost(e) {
   const params = e?.parameter || {};
-  if (params.action === "saveOldMouse") saveOldMouse_(params);
+  handleRequest_(params.action, params);
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleRequest_(requestAction, params) {
+  if (requestAction === "oldState") return buildOldMouseState_();
+  if (requestAction === "saveOldMouse") {
+    saveOldMouse_(params);
+    return { ok: true };
+  }
+  return { error: "Unknown action" };
 }
 
 function buildOldMouseState_() {
