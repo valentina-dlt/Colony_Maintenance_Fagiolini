@@ -137,30 +137,6 @@
 
       <section id="instructionsView" class="instructions-view hidden" aria-label="Instructions">
         <section>
-          <h2>What Comes From The Spreadsheet</h2>
-          <p>The app reads the live Google Sheet on refresh and every five minutes while the page is open. Genetic line tabs, cage numbers, DOB, age, sex, genotype, notes, breeding sections, and experimental notes are interpreted from the spreadsheet. The app excludes CLS 13.</p>
-          <p>Task windows are calculated from spreadsheet DOB and line information: ear tagging, weaning, wean-info review, adult missing tags, FS pup injections, and plasma/tissue collection.</p>
-        </section>
-        <section>
-          <h2>What The App Records</h2>
-          <p>Checked task boxes, Sheets Bridge confirmations, and Old tab SAC/Keep choices are recorded in the App Actions tab with a timestamp, user when Google provides one, task details, and the new state.</p>
-          <p>The app reloads App Actions on refresh so completed work and Old mouse decisions can be seen across devices. The App Actions tab is the shared log; the colony source tabs remain the source of animal and task data.</p>
-        </section>
-        <section>
-          <h2>How Sheets Bridge Works</h2>
-          <p>Sheets Bridge asks: Does the app log agree with the current colony sheet? A checked-off task stays in Needs Sheet Update while the raw colony tabs still generate that task.</p>
-          <p>After the colony sheet is updated and the app no longer generates that task, it moves to Resolved In Sheet. This is the expected endpoint for completed work.</p>
-        </section>
-        <section>
-          <h2>Actions That Record Or Erase Local Data</h2>
-          <p>Checking a task marks it done and adds it to Sheets Bridge. Unchecking that task removes the done state and its manual confirmation state.</p>
-          <p>In Sheets Bridge, manual confirmation records that someone confirmed the Sheet update outside the automatic reconciliation flow. In Old, choosing SAC or Keep records that choice. Clear removes the Old choice. A Keep date in the past returns the mouse to review.</p>
-        </section>
-        <section>
-          <h2>How Colony Sheet Updates Happen</h2>
-          <p>The app records team actions in App Actions. It does not directly edit the colony source tabs. Source-tab changes should still be made in the Google Sheet so the colony record stays human-readable and intentional.</p>
-        </section>
-        <section>
           <h2>Basic Workflow</h2>
           <p>Start in the task views to decide what work needs to happen. All shows the full checklist, Today shows work whose window has started, and Week or Month show the same tasks on a calendar. Use filters to narrow by status, task type, line, or search text.</p>
           <p>When you complete the real colony work, check the task box. That checkbox means the work was done in the room, not that the colony spreadsheet has already been updated. The check is written to App Actions with who clicked it and when.</p>
@@ -406,6 +382,30 @@
           </div>
         </section>
         <section>
+          <h2>What Comes From The Spreadsheet</h2>
+          <p>The app reads the live Google Sheet on refresh and every five minutes while the page is open. Genetic line tabs, cage numbers, DOB, age, sex, genotype, notes, breeding sections, and experimental notes are interpreted from the spreadsheet. The app excludes CLS 13.</p>
+          <p>Task windows are calculated from spreadsheet DOB and line information: ear tagging, weaning, wean-info review, adult missing tags, FS pup injections, and plasma/tissue collection.</p>
+        </section>
+        <section>
+          <h2>What The App Records</h2>
+          <p>Checked task boxes, Sheets Bridge confirmations, and Old tab SAC/Keep choices are recorded in the App Actions tab with a timestamp, user when Google provides one, task details, and the new state.</p>
+          <p>The app reloads App Actions on refresh so completed work and Old mouse decisions can be seen across devices. The App Actions tab is the shared log; the colony source tabs remain the source of animal and task data.</p>
+        </section>
+        <section>
+          <h2>How Sheets Bridge Works</h2>
+          <p>Sheets Bridge asks: Does the app log agree with the current colony sheet? A checked-off task stays in Needs Sheet Update while the raw colony tabs still generate that task.</p>
+          <p>After the colony sheet is updated and the app no longer generates that task, it moves to Resolved In Sheet. This is the expected endpoint for completed work.</p>
+        </section>
+        <section>
+          <h2>Actions That Record Or Erase Local Data</h2>
+          <p>Checking a task marks it done and adds it to Sheets Bridge. Unchecking that task removes the done state and its manual confirmation state.</p>
+          <p>In Sheets Bridge, manual confirmation records that someone confirmed the Sheet update outside the automatic reconciliation flow. In Old, choosing SAC or Keep records that choice. Clear removes the Old choice. A Keep date in the past returns the mouse to review.</p>
+        </section>
+        <section>
+          <h2>How Colony Sheet Updates Happen</h2>
+          <p>The app records team actions in App Actions. It does not directly edit the colony source tabs. Source-tab changes should still be made in the Google Sheet so the colony record stays human-readable and intentional.</p>
+        </section>
+        <section>
           <h2>Troubleshooting</h2>
           <div class="definition-table-wrap">
             <table class="definition-table">
@@ -485,7 +485,7 @@
       </tr>
     </template>
 
-    <script src="sample-data.js?v=20260701-06"></script>
-    <script src="app.js?v=20260701-06"></script>
+    <script src="sample-data.js?v=20260701-07"></script>
+    <script src="app.js?v=20260701-07"></script>
   </body>
 </html>
