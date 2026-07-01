@@ -142,9 +142,9 @@
           <p>Task windows are calculated from spreadsheet DOB and line information: ear tagging, weaning, wean-info review, adult missing tags, FS pup injections, and plasma/tissue collection.</p>
         </section>
         <section>
-          <h2>What Is Saved In This Browser</h2>
-          <p>If the App Actions bridge is not configured, checked task boxes, Sheets Bridge confirmations, and Old tab SAC/Keep choices are stored only in the current browser's local storage. They are not shared across users, computers, browsers, private windows, or cleared browser profiles.</p>
-          <p>If the App Actions bridge is configured, those actions are also appended to the spreadsheet's App Actions tab and reloaded across devices on refresh.</p>
+          <h2>What The App Records</h2>
+          <p>Checked task boxes, Sheets Bridge confirmations, and Old tab SAC/Keep choices are recorded in the App Actions tab with a timestamp, user when Google provides one, task details, and the new state.</p>
+          <p>The app reloads App Actions on refresh so completed work and Old mouse decisions can be seen across devices. The App Actions tab is the shared log; the colony source tabs remain the source of animal and task data.</p>
         </section>
         <section>
           <h2>How Sheets Bridge Works</h2>
@@ -157,15 +157,15 @@
           <p>In Sheets Bridge, manual confirmation records that someone confirmed the Sheet update outside the automatic reconciliation flow. In Old, choosing SAC or Keep records that choice. Clear removes the Old choice. A Keep date in the past returns the mouse to review.</p>
         </section>
         <section>
-          <h2>What Does Not Write To The Sheet</h2>
-          <p>The webpage does not write into the colony source tabs. The old exact-row SAC/Keep bridge is disabled after unsafe writes were observed. The safer bridge only appends rows to App Actions, which stores who did what and when without overwriting colony data.</p>
+          <h2>How Colony Sheet Updates Happen</h2>
+          <p>The app records team actions in App Actions. It does not directly edit the colony source tabs. Source-tab changes should still be made in the Google Sheet so the colony record stays human-readable and intentional.</p>
         </section>
         <section>
           <h2>Basic Workflow</h2>
           <p>Start in the task views to decide what work needs to happen. All shows the full checklist, Today shows work whose window has started, and Week or Month show the same tasks on a calendar. Use filters to narrow by status, task type, line, or search text.</p>
-          <p>When you complete the real colony work, check the task box. That checkbox means the work was done in the room, not that the colony spreadsheet has already been updated. If the shared bridge is configured, the check is written to App Actions with who clicked it and when. If the shared bridge is not configured, the check is saved only in that browser.</p>
+          <p>When you complete the real colony work, check the task box. That checkbox means the work was done in the room, not that the colony spreadsheet has already been updated. The check is written to App Actions with who clicked it and when.</p>
           <p>After a task is checked, go to Sheets Bridge. If the task still appears under Needs Sheet Update, update the colony spreadsheet so the raw sheet reflects the completed work. After the next refresh, the app should stop generating that task and it should move to Resolved In Sheet.</p>
-          <p>If you click a checkbox by mistake, uncheck it. Unchecking removes the done state and clears that task's manual Sheet confirmation state. If the shared bridge is configured, the undo is also logged in App Actions so the history shows both the mistaken click and the correction.</p>
+          <p>If you click a checkbox by mistake, uncheck it. Unchecking removes the done state and clears that task's manual Sheet confirmation state. The undo is also logged in App Actions so the history shows both the mistaken click and the correction.</p>
           <p>If you are unsure whether a completed task has been reflected correctly in the colony sheet, leave it visible in Sheets Bridge until a manager or the person updating the sheet can confirm the source data.</p>
         </section>
         <section>
@@ -255,7 +255,7 @@
                   <td>Overdue</td>
                   <td>Task state, summary, calendar legend</td>
                   <td>Today is after the task window end date, unless the task is already Done or is an experimental task that moves to Review after its window.</td>
-                  <td>Calculated task window from DOB; browser/App Actions done state.</td>
+                  <td>Calculated task window from DOB; App Actions done state.</td>
                 </tr>
                 <tr>
                   <td>Due Now</td>
@@ -278,8 +278,8 @@
                 <tr>
                   <td>Done</td>
                   <td>Task state and filters</td>
-                  <td>A user checked the task checkbox in the app. If the shared bridge is active, this comes from App Actions; otherwise it is browser-local.</td>
-                  <td>Browser local storage and/or App Actions log.</td>
+                  <td>A user checked the task checkbox in the app.</td>
+                  <td>App Actions log.</td>
                 </tr>
                 <tr>
                   <td>Ear Tag</td>
@@ -327,19 +327,19 @@
                   <td>Needs Sheet Update</td>
                   <td>Sheets Bridge</td>
                   <td>A task was checked off in the app, but the current raw colony tabs still generate that task.</td>
-                  <td>App Actions or browser done state compared with the latest generated task list.</td>
+                  <td>App Actions done state compared with the latest generated task list.</td>
                 </tr>
                 <tr>
                   <td>Resolved In Sheet</td>
                   <td>Sheets Bridge</td>
                   <td>A task was checked off in the app and is no longer generated from the current colony sheet. This usually means the sheet was updated to reflect the completed work.</td>
-                  <td>App Actions or browser done state compared with the latest generated task list.</td>
+                  <td>App Actions done state compared with the latest generated task list.</td>
                 </tr>
                 <tr>
                   <td>Manually Confirmed</td>
                   <td>Sheets Bridge</td>
                   <td>A user clicked the manual confirmation button in Sheets Bridge. This records confirmation but does not edit the colony tabs.</td>
-                  <td>Browser local storage and/or App Actions log.</td>
+                  <td>App Actions log.</td>
                 </tr>
                 <tr>
                   <td>Reconciliation Status</td>
@@ -375,19 +375,19 @@
                   <td>Needs Review</td>
                   <td>Old tab</td>
                   <td>An Old animal without a current SAC assignment or active Keep-until date.</td>
-                  <td>Old mouse state from browser/App Actions, animal age.</td>
+                  <td>Old mouse state from App Actions, animal age.</td>
                 </tr>
                 <tr>
                   <td>Assigned</td>
                   <td>Old tab</td>
                   <td>An Old animal marked SAC, or marked Keep with a Keep date that is today or in the future.</td>
-                  <td>Old mouse state from browser/App Actions.</td>
+                  <td>Old mouse state from App Actions.</td>
                 </tr>
                 <tr>
                   <td>SAC</td>
                   <td>Old tab action</td>
                   <td>Records that the old animal is assigned for sacrifice. This is a UI/log assignment only.</td>
-                  <td>User action, browser/App Actions state.</td>
+                  <td>User action, App Actions state.</td>
                 </tr>
                 <tr>
                   <td>Keep</td>
@@ -399,7 +399,53 @@
                   <td>Clear</td>
                   <td>Old tab action</td>
                   <td>Removes the local/shared SAC or Keep choice for that animal.</td>
-                  <td>User action, browser/App Actions state.</td>
+                  <td>User action, App Actions state.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section>
+          <h2>Troubleshooting</h2>
+          <div class="definition-table-wrap">
+            <table class="definition-table">
+              <thead>
+                <tr>
+                  <th>What You See</th>
+                  <th>Likely Cause</th>
+                  <th>What To Do</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>A checked box disappears after refresh or is not visible on another device.</td>
+                  <td>The App Actions bridge may not have saved the click, the page may not have refreshed shared state yet, or the user may be viewing an old cached page.</td>
+                  <td>Refresh the app, check whether the action appears in the App Actions tab, and make sure the page loaded the newest version.</td>
+                </tr>
+                <tr>
+                  <td>The upper-right status says sample fallback.</td>
+                  <td>The app could not read the live Google Sheet and is using sample data.</td>
+                  <td>Confirm the Google Sheet is accessible to the current browser account, then refresh.</td>
+                </tr>
+                <tr>
+                  <td>A completed task remains in Needs Sheet Update.</td>
+                  <td>The colony source tab still contains data that generates that task.</td>
+                  <td>Update the colony sheet to reflect the completed work, then refresh the app. The task should move to Resolved In Sheet when it is no longer generated.</td>
+                </tr>
+                <tr>
+                  <td>A task moved to Resolved In Sheet sooner than expected.</td>
+                  <td>The raw colony data changed so the app no longer generates that exact task. This can be normal after animals move, cages are updated, or litter rows are cleaned up.</td>
+                  <td>Check the relevant colony tab and App Actions row. If the sheet change was intentional, no action is needed.</td>
+                </tr>
+                <tr>
+                  <td>Old mouse SAC or Keep choices do not appear for another user.</td>
+                  <td>The action may not have reached App Actions, or the other user has not refreshed since it was recorded.</td>
+                  <td>Check App Actions for the oldMouse row, then refresh the other user's app.</td>
+                </tr>
+                <tr>
+                  <td>A task looks wrong or is missing.</td>
+                  <td>The parser may not understand a shifted column, unusual note format, missing DOB, unclear cage number, or unexpected litter label.</td>
+                  <td>Check the source row in the colony tab and compare it with the Status And Logic Reference. Standardizing the sheet row usually fixes task generation.</td>
                 </tr>
               </tbody>
             </table>
@@ -439,7 +485,7 @@
       </tr>
     </template>
 
-    <script src="sample-data.js?v=20260701-05"></script>
-    <script src="app.js?v=20260701-05"></script>
+    <script src="sample-data.js?v=20260701-06"></script>
+    <script src="app.js?v=20260701-06"></script>
   </body>
 </html>
