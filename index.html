@@ -143,18 +143,267 @@
         </section>
         <section>
           <h2>What Is Saved In This Browser</h2>
-          <p>Checked task boxes, Sheets Bridge confirmations, and Old tab SAC/Keep choices are stored only in the current browser's local storage. They are not shared across users, computers, browsers, private windows, or cleared browser profiles.</p>
-          <p>Refreshing the page keeps browser-local choices. Opening the app in another browser or after clearing site data will not show those choices.</p>
+          <p>If the App Actions bridge is not configured, checked task boxes, Sheets Bridge confirmations, and Old tab SAC/Keep choices are stored only in the current browser's local storage. They are not shared across users, computers, browsers, private windows, or cleared browser profiles.</p>
+          <p>If the App Actions bridge is configured, those actions are also appended to the spreadsheet's App Actions tab and reloaded across devices on refresh.</p>
+        </section>
+        <section>
+          <h2>How Sheets Bridge Works</h2>
+          <p>Sheets Bridge asks: Does the app log agree with the current colony sheet? A checked-off task stays in Needs Sheet Update while the raw colony tabs still generate that task.</p>
+          <p>After the colony sheet is updated and the app no longer generates that task, it moves to Resolved In Sheet. This is the expected endpoint for completed work.</p>
         </section>
         <section>
           <h2>Actions That Record Or Erase Local Data</h2>
-          <p>Checking a task marks it done locally and adds it to Sheets Bridge locally. Unchecking that task removes the local done state and its Sheets Bridge confirmation state.</p>
-          <p>In Sheets Bridge, confirming a task only records that confirmation locally. It does not edit the Google Sheet.</p>
-          <p>In Old, choosing SAC or Keep records that choice locally. Clear removes the local choice. A Keep date in the past returns the mouse to review.</p>
+          <p>Checking a task marks it done and adds it to Sheets Bridge. Unchecking that task removes the done state and its manual confirmation state.</p>
+          <p>In Sheets Bridge, manual confirmation records that someone confirmed the Sheet update outside the automatic reconciliation flow. In Old, choosing SAC or Keep records that choice. Clear removes the Old choice. A Keep date in the past returns the mouse to review.</p>
         </section>
         <section>
           <h2>What Does Not Write To The Sheet</h2>
-          <p>The webpage currently does not write any data back to Google Sheets. The old Apps Script write bridge is disabled after unsafe writes were observed. Spreadsheet updates must be made directly in the Google Sheet.</p>
+          <p>The webpage does not write into the colony source tabs. The old exact-row SAC/Keep bridge is disabled after unsafe writes were observed. The safer bridge only appends rows to App Actions, which stores who did what and when without overwriting colony data.</p>
+        </section>
+        <section>
+          <h2>Basic Workflow</h2>
+          <p>Start in the task views to decide what work needs to happen. All shows the full checklist, Today shows work whose window has started, and Week or Month show the same tasks on a calendar. Use filters to narrow by status, task type, line, or search text.</p>
+          <p>When you complete the real colony work, check the task box. That checkbox means the work was done in the room, not that the colony spreadsheet has already been updated. If the shared bridge is configured, the check is written to App Actions with who clicked it and when. If the shared bridge is not configured, the check is saved only in that browser.</p>
+          <p>After a task is checked, go to Sheets Bridge. If the task still appears under Needs Sheet Update, update the colony spreadsheet so the raw sheet reflects the completed work. After the next refresh, the app should stop generating that task and it should move to Resolved In Sheet.</p>
+          <p>If you click a checkbox by mistake, uncheck it. Unchecking removes the done state and clears that task's manual Sheet confirmation state. If the shared bridge is configured, the undo is also logged in App Actions so the history shows both the mistaken click and the correction.</p>
+          <p>If you are unsure whether a completed task has been reflected correctly in the colony sheet, leave it visible in Sheets Bridge until a manager or the person updating the sheet can confirm the source data.</p>
+        </section>
+        <section>
+          <h2>Tasks Versus Tools</h2>
+          <p>A task is a specific piece of colony work generated from spreadsheet data, such as Ear Tag, Wean, Adult Missing Tags, or Plasma/Tissue Collection. Task views are different ways to look at those generated tasks.</p>
+          <p>A tool is a workspace for a related job that is not just a single due-window checklist. Breeders reviews breeding cages and replacement options. Old reviews animals over the age cutoff. Sheets Bridge reconciles completed app tasks with the colony sheet. Instructions explains the app rules and labels.</p>
+        </section>
+        <section>
+          <h2>Tool Reference</h2>
+          <div class="definition-table-wrap">
+            <table class="definition-table">
+              <thead>
+                <tr>
+                  <th>Tool Or View</th>
+                  <th>Type</th>
+                  <th>What It Is For</th>
+                  <th>Expected User Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>All</td>
+                  <td>Task view</td>
+                  <td>Shows the full generated task table with filters and sorting.</td>
+                  <td>Scan, filter, check completed tasks, and review details before doing or recording work.</td>
+                </tr>
+                <tr>
+                  <td>Today</td>
+                  <td>Task view</td>
+                  <td>Shows open tasks whose work window has started, grouped by urgency.</td>
+                  <td>Use as the daily work list.</td>
+                </tr>
+                <tr>
+                  <td>Week</td>
+                  <td>Task view</td>
+                  <td>Shows task windows or due dates across the current week.</td>
+                  <td>Plan near-term work and see what is coming next.</td>
+                </tr>
+                <tr>
+                  <td>Month</td>
+                  <td>Task view</td>
+                  <td>Shows task windows or due dates across the current month.</td>
+                  <td>Plan colony maintenance and experiments farther ahead.</td>
+                </tr>
+                <tr>
+                  <td>Breeders</td>
+                  <td>Tool</td>
+                  <td>Shows breeding cages as Good or Replace and lists possible replacement animals by breeding program criteria.</td>
+                  <td>Review breeder age status and identify candidate replacements.</td>
+                </tr>
+                <tr>
+                  <td>Old</td>
+                  <td>Tool</td>
+                  <td>Shows animals older than P220 and tracks SAC or Keep decisions.</td>
+                  <td>Assign SAC, Keep with a date, or Clear an old-mouse decision.</td>
+                </tr>
+                <tr>
+                  <td>Sheets Bridge</td>
+                  <td>Tool</td>
+                  <td>Compares checked-off app tasks with the current colony spreadsheet.</td>
+                  <td>Use Needs Sheet Update to know what still needs spreadsheet cleanup; use Resolved In Sheet to see tasks that disappeared after the sheet was updated.</td>
+                </tr>
+                <tr>
+                  <td>Instructions</td>
+                  <td>Tool</td>
+                  <td>Documents where data comes from, what the app records, and how labels are calculated.</td>
+                  <td>Use as the team reference when a label or cutoff is unclear.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section>
+          <h2>Status And Logic Reference</h2>
+          <div class="definition-table-wrap">
+            <table class="definition-table">
+              <thead>
+                <tr>
+                  <th>Word Or Title</th>
+                  <th>Where It Appears</th>
+                  <th>What Qualifies It</th>
+                  <th>Data Used</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Overdue</td>
+                  <td>Task state, summary, calendar legend</td>
+                  <td>Today is after the task window end date, unless the task is already Done or is an experimental task that moves to Review after its window.</td>
+                  <td>Calculated task window from DOB; browser/App Actions done state.</td>
+                </tr>
+                <tr>
+                  <td>Due Now</td>
+                  <td>Task state, summary, filters</td>
+                  <td>Today falls between the task window start and end dates, including both start and end dates.</td>
+                  <td>Calculated task window from DOB.</td>
+                </tr>
+                <tr>
+                  <td>Upcoming</td>
+                  <td>Task state, summary, filters</td>
+                  <td>Today is before the task window start date.</td>
+                  <td>Calculated task window from DOB.</td>
+                </tr>
+                <tr>
+                  <td>Review</td>
+                  <td>Task state, summary, filters</td>
+                  <td>The app cannot treat the task as a normal due-window item. Current triggers include tagged?/review notes, already-weaned notes, adult missing tags, and FS injection or plasma/tissue tasks after their window.</td>
+                  <td>Spreadsheet notes, litter labels, adult cage tag data, task type, DOB.</td>
+                </tr>
+                <tr>
+                  <td>Done</td>
+                  <td>Task state and filters</td>
+                  <td>A user checked the task checkbox in the app. If the shared bridge is active, this comes from App Actions; otherwise it is browser-local.</td>
+                  <td>Browser local storage and/or App Actions log.</td>
+                </tr>
+                <tr>
+                  <td>Ear Tag</td>
+                  <td>Task type</td>
+                  <td>Generated for non-C57 litters from P14 through P20.</td>
+                  <td>Litter DOB, line name, cage, notes.</td>
+                </tr>
+                <tr>
+                  <td>Wean</td>
+                  <td>Task type</td>
+                  <td>Generated for litters from P22 through P28.</td>
+                  <td>Litter DOB, line name, cage, notes.</td>
+                </tr>
+                <tr>
+                  <td>Wean Info To Spreadsheet</td>
+                  <td>Task type</td>
+                  <td>Used instead of Wean after the weaning window has passed, so the team updates the colony sheet rather than treating it as a normal cage task.</td>
+                  <td>Litter DOB and current date.</td>
+                </tr>
+                <tr>
+                  <td>Adult Missing Tags</td>
+                  <td>Task type</td>
+                  <td>Generated for non-C57 adult cages when tags are blank, unclear, marked missing/check/tagged?, or notes suggest tag review.</td>
+                  <td>Adult cage rows, tag/mark cells, notes, line name.</td>
+                </tr>
+                <tr>
+                  <td>Pup ASO Injection 1</td>
+                  <td>Task type</td>
+                  <td>Generated for CDKL5 FS litters from P0 through P2. Past injection tasks are hidden after the window.</td>
+                  <td>CDKL5 FS litter DOB and notes.</td>
+                </tr>
+                <tr>
+                  <td>Pup ASO Injection 2</td>
+                  <td>Task type</td>
+                  <td>Generated for CDKL5 FS litters on P6. Past injection tasks are hidden after the window.</td>
+                  <td>CDKL5 FS litter DOB and notes.</td>
+                </tr>
+                <tr>
+                  <td>Plasma/Tissue Collection</td>
+                  <td>Task type</td>
+                  <td>Generated for CDKL5 FS litters on P21. After the window it moves to Review instead of Overdue.</td>
+                  <td>CDKL5 FS litter DOB and notes.</td>
+                </tr>
+                <tr>
+                  <td>Needs Sheet Update</td>
+                  <td>Sheets Bridge</td>
+                  <td>A task was checked off in the app, but the current raw colony tabs still generate that task.</td>
+                  <td>App Actions or browser done state compared with the latest generated task list.</td>
+                </tr>
+                <tr>
+                  <td>Resolved In Sheet</td>
+                  <td>Sheets Bridge</td>
+                  <td>A task was checked off in the app and is no longer generated from the current colony sheet. This usually means the sheet was updated to reflect the completed work.</td>
+                  <td>App Actions or browser done state compared with the latest generated task list.</td>
+                </tr>
+                <tr>
+                  <td>Manually Confirmed</td>
+                  <td>Sheets Bridge</td>
+                  <td>A user clicked the manual confirmation button in Sheets Bridge. This records confirmation but does not edit the colony tabs.</td>
+                  <td>Browser local storage and/or App Actions log.</td>
+                </tr>
+                <tr>
+                  <td>Reconciliation Status</td>
+                  <td>App Actions column</td>
+                  <td>Records the app's reconciliation note, such as when a checked-off task has resolved in the sheet because it is no longer generated.</td>
+                  <td>App-generated comparison between the log and current colony sheet tasks.</td>
+                </tr>
+                <tr>
+                  <td>Good</td>
+                  <td>Breeders</td>
+                  <td>A breeding cage is marked Good when no animal in that cage is P200 or older.</td>
+                  <td>Breeding-section cages, configured breeder cage list, animal ages.</td>
+                </tr>
+                <tr>
+                  <td>Replace</td>
+                  <td>Breeders</td>
+                  <td>A breeding cage is marked Replace when any animal in that cage is P200 or older.</td>
+                  <td>Breeding-section cages, configured breeder cage list, animal ages.</td>
+                </tr>
+                <tr>
+                  <td>Replacement Options</td>
+                  <td>Breeders</td>
+                  <td>Animals P60 through P200 whose sex, genotype, and source line match a breeding program's replacement criteria. Inbreeding is not filtered yet.</td>
+                  <td>Adult cage animals, age, sex, genotype, line, configured breeding programs.</td>
+                </tr>
+                <tr>
+                  <td>Old</td>
+                  <td>Old tab</td>
+                  <td>Any animal older than P220.</td>
+                  <td>Adult cage animals and age.</td>
+                </tr>
+                <tr>
+                  <td>Needs Review</td>
+                  <td>Old tab</td>
+                  <td>An Old animal without a current SAC assignment or active Keep-until date.</td>
+                  <td>Old mouse state from browser/App Actions, animal age.</td>
+                </tr>
+                <tr>
+                  <td>Assigned</td>
+                  <td>Old tab</td>
+                  <td>An Old animal marked SAC, or marked Keep with a Keep date that is today or in the future.</td>
+                  <td>Old mouse state from browser/App Actions.</td>
+                </tr>
+                <tr>
+                  <td>SAC</td>
+                  <td>Old tab action</td>
+                  <td>Records that the old animal is assigned for sacrifice. This is a UI/log assignment only.</td>
+                  <td>User action, browser/App Actions state.</td>
+                </tr>
+                <tr>
+                  <td>Keep</td>
+                  <td>Old tab action</td>
+                  <td>Records that the old animal should be kept until the selected date. If the date passes, the animal returns to review.</td>
+                  <td>User action, selected keep date, current date.</td>
+                </tr>
+                <tr>
+                  <td>Clear</td>
+                  <td>Old tab action</td>
+                  <td>Removes the local/shared SAC or Keep choice for that animal.</td>
+                  <td>User action, browser/App Actions state.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </section>
 
@@ -190,7 +439,7 @@
       </tr>
     </template>
 
-    <script src="sample-data.js?v=20260629-14"></script>
-    <script src="app.js?v=20260629-14"></script>
+    <script src="sample-data.js?v=20260701-05"></script>
+    <script src="app.js?v=20260701-05"></script>
   </body>
 </html>

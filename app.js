@@ -13,8 +13,11 @@ const CONFIG = {
     "CDKL5 FL x Fox J1 Cre"
   ],
   autoRefreshMs: 5 * 60 * 1000,
+  appVersion: "20260701-actions-v2",
   localStorageKey: "colony-task-status-v1",
+  sessionStorageKey: "colony-task-session-id-v1",
   oldMouseStorageKey: "colony-old-mouse-status-v1",
+  actionLogBridgeUrl: "",
   oldMouseBridgeUrl: ""
 };
 
@@ -65,6 +68,8 @@ let taskCache = [];
 let sourceRows = [];
 let completionState = loadCompletionState();
 let oldMouseState = loadOldMouseState();
+let reconciliationState = {};
+let sessionId = loadSessionId();
 let activeView = "all";
 let calendarMode = "window";
 
@@ -197,7 +202,20 @@ function saveOldMouseState() {
 }
 
 function bridgeEnabled() {
-  return Boolean(CONFIG.oldMouseBridgeUrl);
+  return Boolean(CONFIG.actionLogBridgeUrl || CONFIG.oldMouseBridgeUrl);
+}
+
+function bridgeUrl() {
+  return CONFIG.actionLogBridgeUrl || CONFIG.oldMouseBridgeUrl;
+}
+
+function loadSessionId() {
+  let value = localStorage.getItem(CONFIG.sessionStorageKey);
+  if (!value) {
+    value = `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(CONFIG.sessionStorageKey, value);
+  }
+  return value;
 }
 
 function taskId(parts) {
@@ -687,8 +705,19 @@ function loadGoogleSheet(sheetName) {
 function loadOldMouseBridgeState() {
   if (!bridgeEnabled()) return Promise.resolve(oldMouseState);
 
-  const params = new URLSearchParams({ action: "oldState" });
-  return bridgeJsonp(params, "oldMouseState");
+  const params = new URLSearchParams({ action: "appState" });
+  return bridgeJsonp(params, "appState").then((payload) => {
+    if (payload?.tasks) {
+      completionState = payload.tasks;
+      saveCompletionState();
+    }
+    if (payload?.oldMice) {
+      oldMouseState = payload.oldMice;
+      saveOldMouseState();
+    }
+    reconciliationState = payload?.reconciled || {};
+    return oldMouseState;
+  });
 }
 
 function bridgeJsonp(params, callbackPrefix) {
@@ -718,29 +747,52 @@ function bridgeJsonp(params, callbackPrefix) {
       reject(new Error("Could not reach the shared Sheets bridge."));
     };
 
-    script.src = `${CONFIG.oldMouseBridgeUrl}?${params.toString()}`;
+    script.src = `${bridgeUrl()}?${params.toString()}`;
     document.head.append(script);
   });
 }
 
-function saveOldMouseBridgeState(mouse, state) {
+function saveActionBridge(action) {
   if (!bridgeEnabled()) return Promise.resolve();
-  if (!Number.isInteger(Number(mouse.row)) || Number(mouse.row) < 2) {
-    return Promise.reject(new Error(`Unsafe old mouse row: ${mouse.row || "missing"}`));
-  }
   const params = new URLSearchParams({
-    action: "saveOldMouse",
-    id: mouse.id,
-    line: mouse.line,
-    cage: mouse.cage,
-    row: String(mouse.row),
-    tag: mouse.tag || "",
-    sex: mouse.sex || "",
-    status: state?.status || "",
-    keepDate: state?.keepDate || "",
-    note: state?.note || ""
+    action: "saveAction",
+    sessionId,
+    appVersion: CONFIG.appVersion,
+    ...action
   });
-  return bridgeJsonp(params, "oldMouseSave");
+  return bridgeJsonp(params, "appActionSave");
+}
+
+function taskActionPayload(task, logAction, previousState, nextState) {
+  return {
+    logAction,
+    id: task.id,
+    task: task.task,
+    line: task.line,
+    cage: task.cage,
+    row: String(task.row || ""),
+    dob: task.dob || "",
+    previousState: JSON.stringify(previousState || {}),
+    nextState: JSON.stringify(nextState || {}),
+    details: task.details || ""
+  };
+}
+
+function taskLikeFromLoggedState(id, state) {
+  return {
+    id,
+    task: state.task || id.split("|")[0] || "Logged task",
+    line: state.line || "",
+    cage: state.cage || "",
+    row: state.row || "",
+    dob: state.dob || "",
+    age: "",
+    details: state.details || "",
+    state: "review",
+    dueStart: state.completedAt?.slice(0, 10) || CONFIG.today,
+    dueEnd: state.completedAt?.slice(0, 10) || CONFIG.today,
+    missingFromRawData: true
+  };
 }
 
 async function loadRows() {
@@ -832,13 +884,18 @@ function makeDoneToggle(task) {
   done.checked = Boolean(completionState[task.id]?.done);
   done.addEventListener("change", () => {
     const previous = completionState[task.id] || {};
-    completionState[task.id] = {
+    const nextState = {
       done: done.checked,
       completedAt: done.checked ? previous.completedAt || new Date().toISOString() : "",
       sheetConfirmed: done.checked ? Boolean(previous.sheetConfirmed) : false,
       sheetConfirmedAt: done.checked ? previous.sheetConfirmedAt || "" : ""
     };
+    completionState[task.id] = nextState;
     saveCompletionState();
+    saveActionBridge(taskActionPayload(task, "taskDone", previous, nextState)).catch((error) => {
+      console.error(error);
+      els.lastUpdated.textContent = "Task saved locally; shared App Actions bridge is not reachable.";
+    });
     taskCache = taskCache.map((item) => item.id === task.id ? { ...item, state: classifyTask(item) } : item);
     render();
   });
@@ -1328,15 +1385,27 @@ function oldMouseCard(mouse) {
 
 function updateOldMouse(mouse, state) {
   const id = mouse.id;
+  const previous = oldMouseState[id] || {};
   if (state) {
     oldMouseState[id] = state;
   } else {
     delete oldMouseState[id];
   }
   saveOldMouseState();
-  saveOldMouseBridgeState(mouse, state).catch((error) => {
+  saveActionBridge({
+    logAction: "oldMouse",
+    id: mouse.id,
+    task: "Old mouse",
+    line: mouse.line,
+    cage: mouse.cage,
+    row: String(mouse.row || ""),
+    dob: mouse.dob || "",
+    previousState: JSON.stringify(previous),
+    nextState: JSON.stringify(state || { cleared: true }),
+    details: state?.note || mouse.experiment || mouse.notes || ""
+  }).catch((error) => {
     console.error(error);
-    els.lastUpdated.textContent = "Old mouse choice saved locally; Sheets bridge is not reachable.";
+    els.lastUpdated.textContent = "Old mouse choice saved locally; shared App Actions bridge is not reachable.";
   });
   render();
 }
@@ -1345,24 +1414,76 @@ function bridgeTasks() {
   return sortTasks(visibleTasks().filter((task) => completionState[task.id]?.done));
 }
 
+function missingLoggedTasks() {
+  const currentIds = new Set(taskCache.map((task) => task.id));
+  return Object.entries(completionState)
+    .filter(([id, state]) => state?.done && !currentIds.has(id))
+    .map(([id, state]) => taskLikeFromLoggedState(id, state))
+    .sort((a, b) => a.line.localeCompare(b.line) || a.cage.localeCompare(b.cage) || a.task.localeCompare(b.task));
+}
+
 function renderSheetsBridge() {
   const tasks = bridgeTasks();
   const needsUpdate = tasks.filter((task) => !completionState[task.id]?.sheetConfirmed);
   const confirmed = tasks.filter((task) => completionState[task.id]?.sheetConfirmed);
+  const resolved = missingLoggedTasks();
   els.sheetsBridgeView.innerHTML = "";
+
+  const intro = document.createElement("section");
+  intro.className = "bridge-intro";
+  intro.textContent = "Does the app log agree with the current colony sheet?";
 
   const summary = document.createElement("section");
   summary.className = "breeder-summary";
   summary.innerHTML = `
     <div><strong>${tasks.length}</strong><span>Checked off</span></div>
     <div><strong>${needsUpdate.length}</strong><span>Needs Sheet update</span></div>
-    <div><strong>${confirmed.length}</strong><span>Confirmed</span></div>
+    <div><strong>${resolved.length}</strong><span>Resolved in Sheet</span></div>
+    <div><strong>${confirmed.length}</strong><span>Manually confirmed</span></div>
   `;
   els.sheetsBridgeView.append(
+    intro,
     summary,
+    bridgeResolvedSection(resolved),
     bridgeTaskSection("Needs Sheet Update", needsUpdate, false),
-    bridgeTaskSection("Confirmed In Sheet", confirmed, true)
+    bridgeTaskSection("Manually Confirmed", confirmed, true)
   );
+}
+
+function bridgeResolvedSection(tasks) {
+  const section = document.createElement("section");
+  section.className = "breeder-section";
+  const heading = document.createElement("h2");
+  heading.textContent = `Resolved In Sheet (${tasks.length})`;
+  const grid = document.createElement("div");
+  grid.className = "bridge-task-grid";
+  if (tasks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "calendar-empty";
+    empty.textContent = "No checked-off tasks have disappeared from the generated task list yet.";
+    grid.append(empty);
+  } else {
+    tasks.forEach((task) => grid.append(bridgeResolvedCard(task)));
+  }
+  section.append(heading, grid);
+  return section;
+}
+
+function bridgeResolvedCard(task) {
+  const state = completionState[task.id] || {};
+  const known = reconciliationState[task.id] || {};
+  const card = document.createElement("article");
+  card.className = "bridge-task-card bridge-confirmed task-category-maintenance";
+
+  const title = document.createElement("div");
+  title.className = "breeder-card-title";
+  title.textContent = `${task.task} | Cage ${task.cage || "unknown"}`;
+  const meta = document.createElement("p");
+  meta.textContent = `${task.line || "Unknown line"} | logged ${state.completedAt ? formatDate(state.completedAt.slice(0, 10)) : state.updatedAt || "previously"}`;
+  const detail = document.createElement("small");
+  detail.textContent = known.reconciliationStatus || "The app log says this task was done, and the current colony sheet no longer generates it.";
+  card.append(title, meta, detail);
+  return card;
 }
 
 function bridgeTaskSection(title, tasks, confirmed) {
@@ -1405,16 +1526,56 @@ function bridgeTaskCard(task) {
 }
 
 function setSheetConfirmed(taskIdValue, confirmed) {
+  const task = taskCache.find((item) => item.id === taskIdValue);
   const previous = completionState[taskIdValue] || {};
-  completionState[taskIdValue] = {
+  const nextState = {
     ...previous,
     done: true,
     completedAt: previous.completedAt || new Date().toISOString(),
     sheetConfirmed: confirmed,
     sheetConfirmedAt: confirmed ? new Date().toISOString() : ""
   };
+  completionState[taskIdValue] = nextState;
   saveCompletionState();
+  if (task) {
+    saveActionBridge(taskActionPayload(task, "sheetConfirmed", previous, nextState)).catch((error) => {
+      console.error(error);
+      els.lastUpdated.textContent = "Sheet confirmation saved locally; shared App Actions bridge is not reachable.";
+    });
+  }
   render();
+}
+
+function reportResolvedLoggedTasks() {
+  if (!bridgeEnabled()) return;
+  missingLoggedTasks()
+    .filter((task) => !reconciliationState[task.id])
+    .forEach((task) => {
+      const state = completionState[task.id] || {};
+      const message = "Resolved in Sheet: logged task is no longer generated from current colony Sheet data.";
+      saveActionBridge({
+        logAction: "reconciliation",
+        id: task.id,
+        task: task.task,
+        line: task.line,
+        cage: task.cage,
+        row: String(task.row || ""),
+        dob: task.dob || "",
+        previousState: JSON.stringify(state),
+        nextState: JSON.stringify({ reconciliationStatus: "resolvedInSheet" }),
+        details: task.details || "",
+        reconciliationStatus: message
+      }).then(() => {
+        reconciliationState[task.id] = {
+          ...task,
+          reconciliationStatus: message,
+          updatedAt: new Date().toISOString()
+        };
+      }).catch((error) => {
+        console.error(error);
+        els.lastUpdated.textContent = "Resolved task detected locally; shared App Actions bridge is not reachable.";
+      });
+    });
 }
 
 function setActiveView(view) {
@@ -1467,6 +1628,7 @@ async function refresh() {
       return oldMouseState;
     });
     saveOldMouseState();
+    reportResolvedLoggedTasks();
     populateLineFilter([...taskCache, ...buildOldMice(rows)]);
     render();
     const source = els.lastUpdated.dataset.source === "fallback" ? "sample fallback" : "live Google Sheet";

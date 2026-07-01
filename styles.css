@@ -187,6 +187,45 @@ main {
   max-width: 920px;
 }
 
+.definition-table-wrap {
+  overflow-x: auto;
+}
+
+.definition-table {
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.45;
+  margin-top: 12px;
+  min-width: 980px;
+  width: 100%;
+}
+
+.definition-table th,
+.definition-table td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.definition-table th {
+  background: #173d33;
+  color: white;
+}
+
+.definition-table td:first-child {
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.bridge-intro {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 14px;
+}
+
 .calendar-mode {
   background: white;
   border: 1px solid var(--line);

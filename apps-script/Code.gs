@@ -1,5 +1,22 @@
 const SPREADSHEET_ID = "1G_w47rJrhOWsuK_Qpvs8vgC7VCyYLnjR6QvCZ87rR6k";
-const SAC_KEEP_HEADER = "SAC/Keep Notes";
+const APP_ACTIONS_SHEET = "App Actions";
+const APP_ACTION_HEADERS = [
+  "Timestamp",
+  "User",
+  "Session ID",
+  "Action",
+  "Task ID",
+  "Task",
+  "Line",
+  "Cage",
+  "Source Row",
+  "DOB",
+  "Previous State",
+  "New State",
+  "Details",
+  "App Version",
+  "Reconciliation Status"
+];
 const ACTIVE_SHEETS = [
   "CDKL5 KO",
   "CDKL5 FS",
@@ -32,125 +49,148 @@ function doPost(e) {
 }
 
 function handleRequest_(requestAction, params) {
-  if (requestAction === "oldState") return buildOldMouseState_();
-  if (requestAction === "saveOldMouse") {
-    saveOldMouse_(params);
+  if (requestAction === "appState" || requestAction === "oldState") return buildAppState_();
+  if (requestAction === "saveAction" || requestAction === "saveOldMouse") {
+    appendAppAction_(params);
     return { ok: true };
   }
   return { error: "Unknown action" };
 }
 
-function buildOldMouseState_() {
+function buildAppState_() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const state = {};
-  ACTIVE_SHEETS.forEach((sheetName) => {
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) return;
-    const noteColumn = findSacKeepColumn_(sheet);
-    if (!noteColumn) return;
-    const values = sheet.getDataRange().getDisplayValues();
-    values.forEach((cells, index) => {
-      const note = cells[noteColumn - 1];
-      if (!note) return;
-      const animal = parseAnimalRow_(cells, index + 1, sheetName);
-      if (!animal || !animal.id) return;
-      state[animal.id] = parseSacKeepNote_(note);
-    });
+  const sheet = ensureAppActionsSheet_(ss);
+  const values = sheet.getDataRange().getDisplayValues();
+  const tasks = {};
+  const oldMice = {};
+  const reconciled = {};
+
+  values.slice(1).forEach((row) => {
+    const action = row[3];
+    const id = row[4];
+    if (!action || !id) return;
+    const timestamp = row[0];
+    const user = row[1] || "unknown";
+    const nextState = parseJson_(row[11]) || {};
+    const details = row[12] || "";
+    const appVersion = row[13] || "";
+    const reconciliationStatus = row[14] || "";
+
+    if (action === "taskDone" || action === "sheetConfirmed") {
+      tasks[id] = {
+        ...tasks[id],
+        ...nextState,
+        id,
+        task: row[5] || "",
+        line: row[6] || "",
+        cage: row[7] || "",
+        row: row[8] || "",
+        dob: row[9] || "",
+        details,
+        appVersion,
+        updatedAt: timestamp,
+        updatedBy: user
+      };
+    }
+
+    if (action === "reconciliation") {
+      reconciled[id] = {
+        id,
+        task: row[5] || "",
+        line: row[6] || "",
+        cage: row[7] || "",
+        row: row[8] || "",
+        dob: row[9] || "",
+        details,
+        appVersion,
+        reconciliationStatus,
+        updatedAt: timestamp,
+        updatedBy: user
+      };
+    }
+
+    if (action === "oldMouse") {
+      if (nextState.cleared) {
+        delete oldMice[id];
+      } else {
+        oldMice[id] = {
+          status: nextState.status || "",
+          keepDate: nextState.keepDate || "",
+          note: nextState.note || details || "",
+          updatedAt: timestamp,
+          updatedBy: user
+        };
+      }
+    }
   });
-  return state;
+
+  return { tasks, oldMice, reconciled };
 }
 
-function saveOldMouse_(params) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(params.line);
-  if (!sheet) throw new Error(`Sheet not found: ${params.line}`);
-  const row = Number(params.row);
-  if (!Number.isInteger(row) || row < 2) throw new Error(`Unsafe row: ${params.row}`);
-  const values = sheet.getRange(row, 1, 1, sheet.getMaxColumns()).getDisplayValues()[0];
-  const animal = parseAnimalRow_(values, row, params.line);
-  if (!animal || animal.id !== params.id) {
-    throw new Error(`Animal row mismatch. Expected ${params.id}, found ${animal?.id || "none"}`);
+function appendAppAction_(params) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ensureAppActionsSheet_(ss);
+    const timestamp = new Date();
+    const user = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail() || "unknown";
+    const action = params.logAction || actionFromLegacyParams_(params);
+    const nextState = params.nextState || legacyNextState_(params);
+
+    sheet.appendRow([
+      timestamp,
+      user,
+      params.sessionId || "",
+      action,
+      params.id || "",
+      params.task || "",
+      params.line || "",
+      params.cage || "",
+      params.row || "",
+      params.dob || "",
+      params.previousState || "",
+      nextState || "",
+      params.details || params.note || "",
+      params.appVersion || "",
+      params.reconciliationStatus || ""
+    ]);
+  } finally {
+    lock.releaseLock();
   }
-  const noteColumn = ensureSacKeepColumn_(sheet);
-  sheet.getRange(row, noteColumn).setValue(formatSacKeepNote_(params));
 }
 
-function findSacKeepColumn_(sheet) {
-  const scanRows = Math.min(5, sheet.getMaxRows());
-  const values = sheet.getRange(1, 1, scanRows, sheet.getMaxColumns()).getDisplayValues();
-  for (let row = 0; row < values.length; row += 1) {
-    const index = values[row].findIndex((cell) => String(cell || "").trim().toLowerCase() === SAC_KEEP_HEADER.toLowerCase());
-    if (index >= 0) return index + 1;
+function ensureAppActionsSheet_(ss) {
+  const sheet = ss.getSheetByName(APP_ACTIONS_SHEET) || ss.insertSheet(APP_ACTIONS_SHEET);
+  const headerRange = sheet.getRange(1, 1, 1, APP_ACTION_HEADERS.length);
+  const current = headerRange.getDisplayValues()[0];
+  const needsHeader = APP_ACTION_HEADERS.some((header, index) => current[index] !== header);
+  if (needsHeader) {
+    headerRange.setValues([APP_ACTION_HEADERS]);
+    sheet.setFrozenRows(1);
   }
-  return 0;
+  return sheet;
 }
 
-function ensureSacKeepColumn_(sheet) {
-  const existing = findSacKeepColumn_(sheet);
-  if (existing) return existing;
-  const column = sheet.getLastColumn() + 1;
-  sheet.getRange(1, column).setValue(SAC_KEEP_HEADER);
-  return column;
+function actionFromLegacyParams_(params) {
+  if (params.action === "saveOldMouse") return "oldMouse";
+  return params.logAction || "";
 }
 
-function parseAnimalRow_(cells, row, line) {
-  const sexIndex = cells.findIndex((cell) => /^[MF]$/i.test(String(cell || "").trim()));
-  if (sexIndex < 0) return null;
-  const dateIndex = cells.findIndex((cell) => normalizeDate_(cell));
-  const ageIndex = dateIndex >= 0 ? cells.findIndex((cell, index) => index > dateIndex && numericAge_(cell) !== null) : -1;
-  const tagIndex = sexIndex > 0 ? sexIndex - 1 : -1;
-  const cage = findCageAbove_(line, row);
-  const tag = tagIndex >= 0 ? cells[tagIndex] || "" : "";
-  return {
-    id: [line, cage, row, tag || "unmarked", cells[sexIndex] || "?"].join("|"),
-    age: ageIndex >= 0 ? numericAge_(cells[ageIndex]) : null
-  };
-}
-
-function findCageAbove_(sheetName, row) {
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
-  const values = sheet.getRange(1, 1, row, 4).getDisplayValues();
-  for (let index = values.length - 1; index >= 0; index -= 1) {
-    const cage = values[index].find((cell) => /^\??\d{5,6}\??$/.test(String(cell || "").trim()));
-    if (cage) return String(cage).replace(/[^\d]/g, "");
-  }
-  return "";
-}
-
-function formatSacKeepNote_(params) {
-  if (!params.status) return "";
-  const parts = [`status=${params.status}`];
-  if (params.keepDate) parts.push(`keep_date=${params.keepDate}`);
-  if (params.note) parts.push(`note=${String(params.note).replace(/\n/g, " ")}`);
-  parts.push(`updated=${new Date().toISOString()}`);
-  return parts.join("; ");
-}
-
-function parseSacKeepNote_(note) {
-  const state = {};
-  String(note || "").split(";").forEach((part) => {
-    const [rawKey, ...rest] = part.split("=");
-    const key = String(rawKey || "").trim();
-    const value = rest.join("=").trim();
-    if (key === "status") state.status = value;
-    if (key === "keep_date") state.keepDate = value;
-    if (key === "note") state.note = value;
+function legacyNextState_(params) {
+  if (params.action !== "saveOldMouse") return params.nextState || "";
+  if (!params.status) return JSON.stringify({ cleared: true });
+  return JSON.stringify({
+    status: params.status || "",
+    keepDate: params.keepDate || "",
+    note: params.note || ""
   });
-  return state;
 }
 
-function normalizeDate_(value) {
-  const text = String(value || "").trim();
-  const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (!match) return "";
-  const month = match[1].padStart(2, "0");
-  const day = match[2].padStart(2, "0");
-  const rawYear = match[3];
-  const year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
-  return `${year}-${month}-${day}`;
-}
-
-function numericAge_(value) {
-  const match = String(value || "").match(/\d+/);
-  return match ? Number(match[0]) : null;
+function parseJson_(value) {
+  try {
+    return JSON.parse(value || "{}");
+  } catch (error) {
+    return {};
+  }
 }

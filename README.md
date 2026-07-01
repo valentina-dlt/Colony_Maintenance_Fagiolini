@@ -16,13 +16,14 @@ Static GitHub Pages app for turning a Google Sheets mouse colony workbook into a
 - Pup ASO injection and Plasma/Tissue Collection tasks move to review after their work window instead of becoming overdue.
 - Breeders view: shows breeding-section cages as Good or Replace by age, plus replacement options grouped by target line and explicit sex/genotype criteria. Replacement options do not filter for inbreeding yet.
 - Replacement option groups are collapsed by default.
-- Sheets Bridge view: checked-off tasks queue until a user confirms the live Google Sheet has been updated.
+- Sheets Bridge view: checked-off tasks reconcile against the current colony Sheet so the team can see what still needs a Sheet update and what has resolved in the Sheet.
+- Shared task state: when the Apps Script bridge is deployed and configured, task checkoffs, sheet confirmations, and Old-tab SAC/Keep choices append to the `App Actions` tab with timestamp and user.
 
 The app reads the live Google Sheet directly in the browser through Google's visualization endpoint. Task generation is read-only.
 
-## Live Google Sheet bridge
+## Shared App Actions bridge
 
-The primary bridge is already built into `app.js`:
+The primary read bridge is already built into `app.js`:
 
 - `CONFIG.spreadsheetId` points to the colony workbook.
 - `CONFIG.sourceSheets` lists the active tabs to scan.
@@ -31,15 +32,25 @@ The primary bridge is already built into `app.js`:
 
 The workbook must remain accessible to the team account/browser opening the page. If Google blocks the live read, the app falls back to `sample-data.js` and says `sample fallback` in the upper right.
 
-The `apps-script/Code.gs` file is the shared write bridge for Old-tab SAC/Keep decisions. It writes decisions back to a same-row column named `SAC/Keep Notes` on the existing line tabs, so the whole team can see the same assignments.
+The `apps-script/Code.gs` file is the shared action bridge. It does not edit colony source tabs. It only appends events to the `App Actions` tab, then rebuilds shared UI state from that append-only log.
+
+The `App Actions` columns are:
+
+`Timestamp`, `User`, `Session ID`, `Action`, `Task ID`, `Task`, `Line`, `Cage`, `Source Row`, `DOB`, `Previous State`, `New State`, `Details`, `App Version`, `Reconciliation Status`
+
+Sheets Bridge asks: `Does the app log agree with the current colony sheet?` Checked-off tasks remain under `Needs Sheet Update` while the raw colony tabs still generate them. After the colony Sheet is updated and the task is no longer generated, the task moves to `Resolved In Sheet`. When the bridge is configured, the app appends a `reconciliation` row to `App Actions`.
+
+To enable shared state:
 
 1. Open the Google Sheet.
 2. Go to Extensions > Apps Script.
 3. Paste `apps-script/Code.gs`.
 4. Deploy as a Web App with access appropriate for the team.
-5. Put the Web App URL into `CONFIG.oldMouseBridgeUrl` in `app.js`.
+5. Put the Web App URL into `CONFIG.actionLogBridgeUrl` in `app.js`.
 
-If `CONFIG.oldMouseBridgeUrl` is blank, the Old tab still works locally but SAC/Keep decisions are stored only in that browser.
+If `CONFIG.actionLogBridgeUrl` is blank, the app still works locally but checkoffs, sheet confirmations, and Old decisions are stored only in that browser.
+
+The previous exact-row `SAC/Keep Notes` bridge should remain disabled. It was removed from the active workflow because writing into source colony rows proved unsafe against shifting sheet layouts.
 
 ## GitHub Pages
 
