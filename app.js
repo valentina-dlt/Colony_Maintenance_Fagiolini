@@ -579,7 +579,7 @@ function buildTasks(rows) {
 
 function breederStatus(cage) {
   const ages = cage.animals.map((animal) => animal.age).filter((age) => Number.isFinite(age));
-  if (ages.some((age) => age >= 200)) return "Replace";
+  if (ages.some((age) => age >= 120)) return "Replace";
   return "Good";
 }
 
